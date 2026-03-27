@@ -13,21 +13,42 @@ interface Props {
   onArticleUpdate: (article: Article) => void
 }
 
+const TIMEOUT_MS = 30 * 60 * 1000
+
 export default function Editor({ article, isNew, onGenerate, onRetry, onArticleUpdate }: Props) {
   const [keyword, setKeyword] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isTimedOut, setIsTimedOut] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearSSETimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }
 
   const startSSE = useCallback(
     (id: string) => {
       if (eventSourceRef.current) eventSourceRef.current.close()
+      clearSSETimeout()
+      setIsTimedOut(false)
+
       const es = new EventSource(`/api/articles/${id}/stream`)
       eventSourceRef.current = es
+
+      timeoutRef.current = setTimeout(() => {
+        es.close()
+        setIsGenerating(false)
+        setIsTimedOut(true)
+      }, TIMEOUT_MS)
 
       es.onmessage = async (e) => {
         const data = JSON.parse(e.data)
         if (data.status === "done" || data.status === "error") {
+          clearSSETimeout()
           es.close()
           setIsGenerating(false)
           const res = await fetch(`/api/articles/${id}`)
@@ -37,6 +58,7 @@ export default function Editor({ article, isNew, onGenerate, onRetry, onArticleU
       }
 
       es.onerror = () => {
+        clearSSETimeout()
         es.close()
         setIsGenerating(false)
       }
@@ -77,6 +99,7 @@ export default function Editor({ article, isNew, onGenerate, onRetry, onArticleU
   }
 
   const handleRetry = () => {
+    setIsTimedOut(false)
     setIsGenerating(true)
     onRetry()
     if (article) startSSE(article.id)
@@ -188,6 +211,31 @@ export default function Editor({ article, isNew, onGenerate, onRetry, onArticleU
             40% { transform: scale(1); opacity: 1; }
           }
         `}</style>
+      </div>
+    )
+  }
+
+  /* ── Timeout state ── */
+  if (isTimedOut) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto mb-4">
+            <AlertIcon size={22} className="text-amber-500" />
+          </div>
+          <h2 className="text-base font-semibold text-slate-800 mb-1.5">生成逾時</h2>
+          <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+            已等待超過 30 分鐘，後端可能發生異常<br />
+            關鍵字：<span className="font-medium text-slate-700">「{article?.keyword}」</span>
+          </p>
+          <button
+            onClick={handleRetry}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 cursor-pointer active:scale-[0.98] shadow-sm shadow-blue-200"
+          >
+            <RefreshIcon size={15} />
+            重新發送
+          </button>
+        </div>
       </div>
     )
   }

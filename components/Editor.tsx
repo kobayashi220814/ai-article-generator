@@ -244,7 +244,7 @@ export default function Editor({ article, isNew, onGenerate, onRetry, onArticleU
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
       <div className="flex-1 overflow-y-auto">
-        <BlockEditor article={article} onUpdate={onArticleUpdate} />
+        <BlockEditor key={article.id} article={article} onUpdate={onArticleUpdate} />
       </div>
     </div>
   )

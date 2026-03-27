@@ -216,7 +216,7 @@ export default function Editor({ article, isNew, onGenerate, onRetry, onArticleU
   }
 
   /* ── Timeout state ── */
-  if (isTimedOut) {
+  if (isTimedOut && article.status !== "done" && article.status !== "error") {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white">
         <div className="w-full max-w-sm text-center">

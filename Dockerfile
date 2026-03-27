@@ -11,9 +11,8 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-EXPOSE 3000
+EXPOSE 8080
 ENV NODE_ENV=production
-ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node_modules/.bin/next start"]

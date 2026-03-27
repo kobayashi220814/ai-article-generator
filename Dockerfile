@@ -15,4 +15,4 @@ EXPOSE 8080
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node_modules/.bin/next start"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node_modules/.bin/next start -p ${PORT:-8080} -H 0.0.0.0"]

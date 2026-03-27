@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Article {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keyword   String
+  status    String   @default("pending")
+  content   Json?
+  titles    String[]
+  seo       Json?
+  errorMsg  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("articles")
+}

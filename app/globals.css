@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --color-bg: #FAFAFA;
+  --color-sidebar: #F1F5F9;
+  --color-surface: #FFFFFF;
+  --color-border: #E2E8F0;
+  --color-border-hover: #CBD5E1;
+
+  --color-text-primary: #1E293B;
+  --color-text-secondary: #64748B;
+  --color-text-tertiary: #94A3B8;
+
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-light: #EFF6FF;
+
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.bn-container {
+  font-family: var(--font-sans) !important;
+}
+
+/* ── 移除 BlockNote 的 markdown 轉場動畫 ─────────────────────────────────── */
+.bn-block-outer,
+.bn-block-content,
+.bn-block-content:before,
+.bn-block-group .bn-block-group > .bn-block-outer:before {
+  transition: none !important;
+}
+
+/* ── 編輯器排版：行距與段落間距 ──────────────────────────────────────────── */
+.bn-editor {
+  font-size: 15.5px;
+  line-height: 1;
+}
+
+/* 段落 */
+.bn-block-outer {
+  margin-bottom: 0 !important;
+}
+
+.bn-block-content[data-content-type="paragraph"] {
+  padding: 2px 0 !important;
+  line-height: 1.85 !important;
+}
+
+/* 段落之間加間距 */
+.bn-block-outer + .bn-block-outer:has(> .bn-block > .bn-block-content[data-content-type="paragraph"]) {
+  margin-top: 2px !important;
+}
+
+/* 標題 */
+.bn-block-content[data-content-type="heading"] {
+  padding-top: 20px !important;
+  padding-bottom: 4px !important;
+  line-height: 1.35 !important;
+}
+
+/* 標題後第一個段落不需要額外上間距 */
+.bn-block-outer:has(> .bn-block > .bn-block-content[data-content-type="heading"]) + .bn-block-outer {
+  margin-top: 0 !important;
+}
+
+/* 清單項目 */
+.bn-block-content[data-content-type="bulletListItem"],
+.bn-block-content[data-content-type="numberedListItem"],
+.bn-block-content[data-content-type="checkListItem"] {
+  padding: 3px 0 !important;
+  line-height: 1.75 !important;
+}
+
+/* 清單整體上下留白 */
+.bn-block-outer:has(> .bn-block > .bn-block-content[data-content-type="bulletListItem"]),
+.bn-block-outer:has(> .bn-block > .bn-block-content[data-content-type="numberedListItem"]) {
+  margin-top: 1px !important;
+}

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Article } from "@/lib/types"
-import BlockEditor from "./BlockEditor"
+import dynamic from "next/dynamic"
+const BlockEditor = dynamic(() => import("./BlockEditor"), { ssr: false })
 import { SpinnerIcon, AlertIcon, SparklesIcon, RefreshIcon } from "./Icons"
 
 interface Props {

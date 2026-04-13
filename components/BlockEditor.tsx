@@ -381,46 +381,50 @@ export default function BlockEditor({ article, onUpdate }: Props) {
     initEditor()
   }, [editor, article.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 攔截複製事件，將預設樣式轉為 inline style，讓其他編輯器能保留格式
+  // 攔截複製事件，將預設樣式加為 inline style
+  // 我們的 listener 在 BlockNote 之後註冊，所以 BlockNote 的 handler 一定先跑，
+  // 先把含有正確 <ul>/<ol><li> 結構的 HTML 放進 clipboardData，
+  // 我們再讀出來加 inline style 後覆蓋回去。
   useEffect(() => {
+    const addInlineStyles = (root: Element) => {
+      root.querySelectorAll("h2").forEach((el) => {
+        if (!(el as HTMLElement).style.color)
+          (el as HTMLElement).style.color = "rgb(239, 135, 0)"
+      })
+      root.querySelectorAll("h3").forEach((el) => {
+        if (!(el as HTMLElement).style.color)
+          (el as HTMLElement).style.color = "rgb(21, 170, 191)"
+      })
+      root.querySelectorAll("p").forEach((el) => {
+        if (!(el as HTMLElement).style.fontSize)
+          (el as HTMLElement).style.fontSize = "18px"
+      })
+    }
+
     const handleCopy = (e: ClipboardEvent) => {
+      if (!e.clipboardData) return
+
       const selection = window.getSelection()
       if (!selection?.rangeCount) return
-
       const editorEl = document.querySelector(".bn-editor")
       if (!editorEl) return
       let inEditor = false
       for (let i = 0; i < selection.rangeCount; i++) {
         if (editorEl.contains(selection.getRangeAt(i).commonAncestorContainer)) {
-          inEditor = true
-          break
+          inEditor = true; break
         }
       }
       if (!inEditor) return
 
-      const frag = document.createDocumentFragment()
-      for (let i = 0; i < selection.rangeCount; i++) {
-        frag.appendChild(selection.getRangeAt(i).cloneContents())
-      }
-      const wrapper = document.createElement("div")
-      wrapper.appendChild(frag)
+      // 讀取 BlockNote 已設定的 HTML（含正確的 <ul>/<li> 結構）
+      const blockNoteHTML = e.clipboardData.getData("text/html")
+      if (!blockNoteHTML) return
 
-      wrapper.querySelectorAll("h2").forEach((el) => {
-        if (!(el as HTMLElement).style.color)
-          (el as HTMLElement).style.color = "rgb(239, 135, 0)"
-      })
-      wrapper.querySelectorAll("h3").forEach((el) => {
-        if (!(el as HTMLElement).style.color)
-          (el as HTMLElement).style.color = "rgb(21, 170, 191)"
-      })
-      wrapper.querySelectorAll("p").forEach((el) => {
-        if (!(el as HTMLElement).style.fontSize)
-          (el as HTMLElement).style.fontSize = "18px"
-      })
-
-      e.clipboardData?.setData("text/html", wrapper.innerHTML)
-      e.clipboardData?.setData("text/plain", selection.toString())
-      e.preventDefault()
+      const parser = new DOMParser()
+      const parsed = parser.parseFromString(blockNoteHTML, "text/html")
+      addInlineStyles(parsed.body)
+      e.clipboardData.setData("text/html", parsed.body.innerHTML)
+      // BlockNote 已呼叫 e.preventDefault()，不需重複呼叫
     }
 
     document.addEventListener("copy", handleCopy)

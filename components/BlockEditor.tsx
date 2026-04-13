@@ -8,9 +8,27 @@ import {
 } from "@blocknote/react"
 import { BlockNoteView } from "@blocknote/mantine"
 import "@blocknote/mantine/style.css"
+import { BlockNoteSchema, defaultStyleSpecs, createStyleSpec } from "@blocknote/core"
 import TurndownService from "turndown"
 import { Article } from "@/lib/types"
 import { SpinnerIcon, CheckIcon } from "./Icons"
+
+// ─── Custom fontSize style ───────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const FontSizeStyle = createStyleSpec(
+  { type: "fontSize", propSchema: "string" as const },
+  {
+    render(value: string) {
+      const dom = document.createElement("span")
+      dom.style.fontSize = value
+      return { dom, contentDOM: dom }
+    },
+  }
+)
+
+const editorSchema = BlockNoteSchema.create({
+  styleSpecs: { ...defaultStyleSpecs, fontSize: FontSizeStyle },
+})
 
 interface Props {
   article: Article
@@ -72,6 +90,17 @@ function CTAInput({
 
 // ─── Toolbar ────────────────────────────────────────────────────────────────
 
+const FONT_SIZES = [
+  { label: "14px", value: "14px" },
+  { label: "16px", value: "16px" },
+  { label: "18px（預設）", value: "" },
+  { label: "20px", value: "20px" },
+  { label: "22px", value: "22px" },
+  { label: "24px", value: "24px" },
+  { label: "28px", value: "28px" },
+  { label: "32px", value: "32px" },
+]
+
 function EditorToolbar({
   editor,
   onInsertCTA,
@@ -83,10 +112,17 @@ function EditorToolbar({
   const [styles, setStyles] = useState<Record<string, boolean>>({})
   const [blockType, setBlockType] = useState<BlockType>("paragraph")
   const [headingLevel, setHeadingLevel] = useState(1)
+  const [activeTextColor, setActiveTextColor] = useState<string>("")
+  const [activeFontSize, setActiveFontSize] = useState<string>("")
+  const colorInputRef = useRef<HTMLInputElement>(null)
 
   const syncState = useCallback(() => {
     try {
-      setStyles((editor.getActiveStyles() as Record<string, boolean>) ?? {})
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const activeStyles = (editor.getActiveStyles() as any) ?? {}
+      setStyles(activeStyles)
+      setActiveTextColor(activeStyles.textColor ?? "")
+      setActiveFontSize(activeStyles.fontSize ?? "")
       const pos = editor.getTextCursorPosition()
       if (pos?.block) {
         setBlockType(pos.block.type as BlockType)
@@ -164,6 +200,70 @@ function EditorToolbar({
       <TBtn active={false} onClick={onInsertCTA} onMouseDown={prevent} label="插入 CTA">
         <CTAIcon />
       </TBtn>
+
+      <Sep />
+
+      {/* Font size */}
+      <select
+        value={activeFontSize}
+        title="字體大小"
+        onChange={(e) => {
+          const val = e.target.value
+          if (val) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            editor.addStyles({ fontSize: val } as any)
+          } else {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            editor.removeStyles({ fontSize: "" } as any)
+          }
+          editor.focus()
+        }}
+        className="h-7 px-1 text-[11px] rounded border border-gray-200 bg-white text-gray-700 cursor-pointer outline-none hover:border-gray-300 flex-shrink-0"
+      >
+        {FONT_SIZES.map((s) => (
+          <option key={s.value} value={s.value}>{s.label}</option>
+        ))}
+      </select>
+
+      {/* Text color */}
+      <div className="relative flex items-center flex-shrink-0">
+        <button
+          type="button"
+          title={activeTextColor ? `文字顏色：${activeTextColor}` : "文字顏色"}
+          onMouseDown={prevent}
+          onClick={() => colorInputRef.current?.click()}
+          className="w-7 h-7 flex flex-col items-center justify-center gap-0.5 rounded cursor-pointer hover:bg-gray-100"
+        >
+          <span className="text-[13px] font-bold leading-none" style={{ color: activeTextColor || "#374151" }}>A</span>
+          <div className="w-4 h-1 rounded-full" style={{ backgroundColor: activeTextColor || "#374151" }} />
+        </button>
+        <input
+          ref={colorInputRef}
+          type="color"
+          value={activeTextColor || "#374151"}
+          onChange={(e) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            editor.addStyles({ textColor: e.target.value } as any)
+            editor.focus()
+          }}
+          className="absolute opacity-0 w-0 h-0 pointer-events-none"
+        />
+        {activeTextColor && (
+          <button
+            type="button"
+            title="清除顏色"
+            onMouseDown={prevent}
+            onClick={() => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              editor.removeStyles({ textColor: "" } as any)
+              editor.focus()
+            }}
+            className="w-4 h-4 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xs cursor-pointer leading-none"
+          >
+            ×
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -250,7 +350,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isInitializedRef = useRef(false)
 
-  const editor = useCreateBlockNote()
+  const editor = useCreateBlockNote({ schema: editorSchema })
 
   useEffect(() => {
     if (!editor || isInitializedRef.current) return
@@ -280,6 +380,52 @@ export default function BlockEditor({ article, onUpdate }: Props) {
 
     initEditor()
   }, [editor, article.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 攔截複製事件，將預設樣式轉為 inline style，讓其他編輯器能保留格式
+  useEffect(() => {
+    const handleCopy = (e: ClipboardEvent) => {
+      const selection = window.getSelection()
+      if (!selection?.rangeCount) return
+
+      const editorEl = document.querySelector(".bn-editor")
+      if (!editorEl) return
+      let inEditor = false
+      for (let i = 0; i < selection.rangeCount; i++) {
+        if (editorEl.contains(selection.getRangeAt(i).commonAncestorContainer)) {
+          inEditor = true
+          break
+        }
+      }
+      if (!inEditor) return
+
+      const frag = document.createDocumentFragment()
+      for (let i = 0; i < selection.rangeCount; i++) {
+        frag.appendChild(selection.getRangeAt(i).cloneContents())
+      }
+      const wrapper = document.createElement("div")
+      wrapper.appendChild(frag)
+
+      wrapper.querySelectorAll("h2").forEach((el) => {
+        if (!(el as HTMLElement).style.color)
+          (el as HTMLElement).style.color = "rgb(239, 135, 0)"
+      })
+      wrapper.querySelectorAll("h3").forEach((el) => {
+        if (!(el as HTMLElement).style.color)
+          (el as HTMLElement).style.color = "rgb(21, 170, 191)"
+      })
+      wrapper.querySelectorAll("p").forEach((el) => {
+        if (!(el as HTMLElement).style.fontSize)
+          (el as HTMLElement).style.fontSize = "18px"
+      })
+
+      e.clipboardData?.setData("text/html", wrapper.innerHTML)
+      e.clipboardData?.setData("text/plain", selection.toString())
+      e.preventDefault()
+    }
+
+    document.addEventListener("copy", handleCopy)
+    return () => document.removeEventListener("copy", handleCopy)
+  }, [])
 
   const handleChange = useCallback(() => {
     if (!isInitializedRef.current) return
@@ -364,6 +510,11 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       </div>
 
       {/* Editor content */}
+      <style>{`
+        .bn-editor h2 { color: rgb(239, 135, 0); }
+        .bn-editor h3 { color: rgb(21, 170, 191); }
+        .bn-editor p { font-size: 18px; }
+      `}</style>
       <div className="px-2 py-6 max-w-3xl mx-auto w-full">
         <BlockNoteView
           editor={editor}

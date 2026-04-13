@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:zeabur.com)",
+      "WebFetch(domain:docs.zeabur.com)"
+    ]
+  }
+}

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Article, Seo } from "@/lib/types"
+import dynamic from "next/dynamic"
+const CoverModal = dynamic(() => import("./CoverModal"), { ssr: false })
 
 interface Props {
   article: Article | null
@@ -34,6 +36,7 @@ export default function SeoPanel({ article, onUpdate }: Props) {
   const [selectedTitle, setSelectedTitle] = useState("")
   const [metaDescription, setMetaDescription] = useState("")
   const [slug, setSlug] = useState("")
+  const [coverModalOpen, setCoverModalOpen] = useState(false)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -196,9 +199,31 @@ export default function SeoPanel({ article, onUpdate }: Props) {
                 />
               </div>
             </div>
+
+            {/* Divider */}
+            <div className="border-t border-slate-100" />
+
+            {/* 產生封面 */}
+            <div>
+              <button
+                onClick={() => setCoverModalOpen(true)}
+                disabled={!selectedTitle.trim()}
+                title={!selectedTitle.trim() ? "請先填寫文章標題" : undefined}
+                className="w-full py-2.5 bg-slate-800 text-white text-xs font-semibold rounded-xl hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] transition-all"
+              >
+                產生封面
+              </button>
+            </div>
           </div>
         )}
       </div>
+      {coverModalOpen && article && (
+        <CoverModal
+          articleId={article.id}
+          initialText={selectedTitle}
+          onClose={() => setCoverModalOpen(false)}
+        />
+      )}
     </div>
   )
 }

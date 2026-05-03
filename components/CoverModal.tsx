@@ -28,7 +28,6 @@ export default function CoverModal({ articleId, initialText, onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [images, setImages] = useState<UnsplashImage[]>([])
   const [searchTerms, setSearchTerms] = useState<string[]>([])
-  const [showAiButton, setShowAiButton] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
@@ -37,6 +36,9 @@ export default function CoverModal({ articleId, initialText, onClose }: Props) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const dragRef = useRef<{ startX: number; startY: number; startOffsetX: number; startOffsetY: number } | null>(null)
+
+  // showAiButton 作為 derived value：圖片數少於 3 張時顯示
+  const showAiButton = images.length < 3
 
   // 預載字體
   useEffect(() => {
@@ -52,7 +54,6 @@ export default function CoverModal({ articleId, initialText, onClose }: Props) {
       const data = await res.json()
       setSearchTerms(data.search_terms ?? [])
       setImages(data.images ?? [])
-      setShowAiButton((data.images ?? []).length < 3)
     } catch {
       setError("搜尋圖片失敗，請重試")
     } finally {
@@ -95,7 +96,7 @@ export default function CoverModal({ articleId, initialText, onClose }: Props) {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       const aiImg: UnsplashImage = {
-        id: "ai-generated",
+        id: `ai-generated-${Date.now()}`,
         thumb_url: data.image_url,
         full_url: data.image_url,
         alt: "AI 生成",

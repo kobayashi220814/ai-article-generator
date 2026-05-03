@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Article, Seo } from "@/lib/types"
 import dynamic from "next/dynamic"
+import type { CoverState } from "./CoverModal"
 const CoverModal = dynamic(() => import("./CoverModal"), { ssr: false })
 
 interface Props {
@@ -37,6 +38,7 @@ export default function SeoPanel({ article, onUpdate }: Props) {
   const [metaDescription, setMetaDescription] = useState("")
   const [slug, setSlug] = useState("")
   const [coverModalOpen, setCoverModalOpen] = useState(false)
+  const [coverState, setCoverState] = useState<CoverState | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function SeoPanel({ article, onUpdate }: Props) {
     setSelectedTitle(seo?.selected_title ?? "")
     setMetaDescription(seo?.meta_description ?? "")
     setSlug(seo?.slug ?? "")
+    setCoverState(null)
   }, [article?.id])
 
   const saveSeo = useCallback(
@@ -220,7 +223,10 @@ export default function SeoPanel({ article, onUpdate }: Props) {
       {coverModalOpen && article && (
         <CoverModal
           articleId={article.id}
-          initialText={selectedTitle}
+          text={selectedTitle}
+          onTextChange={handleTitleChange}
+          persistedState={coverState}
+          onStateChange={setCoverState}
           onClose={() => setCoverModalOpen(false)}
         />
       )}

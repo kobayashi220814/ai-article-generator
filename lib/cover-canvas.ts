@@ -2,26 +2,16 @@
 
 export const CANVAS_W = 1280
 export const CANVAS_H = 720
-const FONT_SIZE = 64
-const LINE_HEIGHT = 80
-const PADDING_LEFT = 60
+const FONT_SIZE = 94
+const LINE_HEIGHT = 100
+const PADDING_LEFT = 40
 const PADDING_BOTTOM = 60
 const OVERLAY_COLOR = "rgba(0, 0, 0, 0.6)"
-const COLOR_LINE1 = "#FF6A13"
+const COLOR_LINE1 = "#ff914d"
 const COLOR_REST = "#FFFFFF"
 
-let fontLoaded = false
-
 export async function loadCoverFont(): Promise<void> {
-  if (fontLoaded) return
-  const font = new FontFace(
-    "Noto Sans TC",
-    "url(https://fonts.gstatic.com/s/notosanstc/v35/nKKF-GM_FYFRJvXzVXaAPe97P1KHynpCyAE.woff2)",
-    { weight: "700" }
-  )
-  await font.load()
-  document.fonts.add(font)
-  fontLoaded = true
+  await document.fonts.load('700 64px "Noto Sans TC"')
 }
 
 export interface CoverImage {

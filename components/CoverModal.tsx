@@ -11,39 +11,58 @@ import {
   CoverImage,
 } from "@/lib/cover-canvas"
 
-interface UnsplashImage {
+export interface UnsplashImage {
   id: string
   thumb_url: string
   full_url: string
   alt: string
 }
 
+export interface CoverState {
+  images: UnsplashImage[]
+  searchTerms: string[]
+  selectedId: string | null
+}
+
 interface Props {
   articleId: string
-  initialText: string
+  text: string
+  onTextChange: (text: string) => void
+  persistedState: CoverState | null
+  onStateChange: (state: CoverState) => void
   onClose: () => void
 }
 
-export default function CoverModal({ articleId, initialText, onClose }: Props) {
+export default function CoverModal({ articleId, text, onTextChange, persistedState, onStateChange, onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [images, setImages] = useState<UnsplashImage[]>([])
-  const [searchTerms, setSearchTerms] = useState<string[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [images, setImages] = useState<UnsplashImage[]>(persistedState?.images ?? [])
+  const [searchTerms, setSearchTerms] = useState<string[]>(persistedState?.searchTerms ?? [])
+  const [selectedId, setSelectedId] = useState<string | null>(persistedState?.selectedId ?? null)
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const [text, setText] = useState(initialText)
   const [isSearching, setIsSearching] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const dragRef = useRef<{ startX: number; startY: number; startOffsetX: number; startOffsetY: number } | null>(null)
 
-  // showAiButton 作為 derived value：圖片數少於 3 張時顯示
   const showAiButton = images.length < 3
+
+  // 同步狀態回 parent（供下次開啟時恢復）
+  useEffect(() => {
+    onStateChange({ images, searchTerms, selectedId })
+  }, [images, searchTerms, selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 預載字體
   useEffect(() => {
     loadCoverFont().catch(console.error)
   }, [])
+
+  // 恢復上次選取的圖片
+  useEffect(() => {
+    if (!persistedState?.selectedId || !persistedState.images.length) return
+    const img = persistedState.images.find((i) => i.id === persistedState.selectedId)
+    if (img) handleSelectImage(img)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 搜圖
   const searchImages = useCallback(async () => {
@@ -62,8 +81,9 @@ export default function CoverModal({ articleId, initialText, onClose }: Props) {
   }, [articleId])
 
   useEffect(() => {
+    if (persistedState && persistedState.images.length > 0) return
     searchImages()
-  }, [searchImages])
+  }, [searchImages]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 選取縮圖 → 載入圖片 → 初始化 Canvas
   const handleSelectImage = useCallback(async (img: UnsplashImage) => {
@@ -81,10 +101,13 @@ export default function CoverModal({ articleId, initialText, onClose }: Props) {
     el.onerror = () => setError("圖片載入失敗")
   }, [])
 
-  // 重繪 canvas
+  // 重繪 canvas（先確保對應文字的字體 subset 已載入）
   useEffect(() => {
     if (!canvasRef.current || !coverImage) return
-    renderCover(canvasRef.current, coverImage, offset.x, offset.y, text)
+    const canvas = canvasRef.current
+    document.fonts.load(`700 64px "Noto Sans TC"`, text).then(() => {
+      renderCover(canvas, coverImage, offset.x, offset.y, text)
+    })
   }, [coverImage, offset, text])
 
   // DALL-E 3 生成
@@ -168,72 +191,71 @@ export default function CoverModal({ articleId, initialText, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden max-h-[90vh]">
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" }}>
+      <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 25px 60px rgba(0,0,0,0.3)", width: "100%", maxWidth: 1024, margin: "0 16px", display: "flex", flexDirection: "column", maxHeight: "90vh", overflow: "hidden" }}>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-700">產生封面</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer">✕</button>
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid #f3f4f6" }}>
+          <h2 className="text-base font-semibold text-gray-800">產生封面圖</h2>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">✕</button>
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4 p-5">
-          {/* Canvas 預覽 */}
-          <div className="relative bg-slate-900 rounded-xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
-            {!coverImage && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-slate-500 text-sm">選擇下方圖片以預覽封面</p>
-              </div>
-            )}
-            <canvas
-              ref={canvasRef}
-              className="w-full h-full"
-              style={{ cursor: coverImage ? "grab" : "default" }}
-              onMouseDown={handleMouseDown}
-            />
-            {coverImage && (
-              <div className="absolute top-2 right-2 bg-black/50 rounded px-2 py-1">
-                <span className="text-[11px] text-slate-300">拖曳調整位置</span>
-              </div>
-            )}
-          </div>
+        {/* Body */}
+        <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
 
-          {/* 文字編輯 */}
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">封面文字</p>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={3}
-              placeholder={"第一行橘色\n第二行之後白色"}
-              className="w-full px-3 py-2.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 resize-none placeholder:text-slate-300 leading-relaxed font-mono"
-            />
-            <p className="text-[10px] text-slate-400 mt-1">第一行顯示橘色，換行後顯示白色</p>
-          </div>
+          {/* 左欄：預覽 + 文字 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: 24, flex: 1, minWidth: 0 }}>
 
-          {/* 搜尋詞 + 縮圖列 */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">搜尋詞</p>
-              {searchTerms.length > 0 && (
-                <span className="text-xs text-slate-500">{searchTerms.join(", ")}</span>
+            {/* Canvas 16:9 容器 */}
+            <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", background: "#111827", borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+              {!coverImage && (
+                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <span style={{ fontSize: 32, opacity: 0.3 }}>🖼️</span>
+                  <p className="text-sm text-gray-500">從右側選擇一張圖片</p>
+                </div>
               )}
-              <button
-                onClick={searchImages}
-                disabled={isSearching}
-                className="ml-auto text-[11px] text-blue-500 hover:text-blue-700 disabled:opacity-40 cursor-pointer"
-              >
-                {isSearching ? "搜尋中..." : "重新搜尋"}
-              </button>
+              <canvas
+                ref={canvasRef}
+                width={1280}
+                height={720}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", cursor: coverImage ? "grab" : "default", display: "block" }}
+                onMouseDown={handleMouseDown}
+              />
             </div>
 
-            {error && (
-              <p className="text-xs text-red-500 mb-2">{error}</p>
-            )}
+            {/* 文字編輯 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">封面標題</span>
+              <textarea
+                value={text}
+                onChange={(e) => onTextChange(e.target.value)}
+                rows={3}
+                placeholder={"第一行文字（橘色）\n第二行文字（白色）"}
+                style={{ width: "100%", padding: "12px 14px", fontSize: 14, color: "#374151", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12, resize: "none", lineHeight: 1.6, outline: "none", fontFamily: "inherit" }}
+                onFocus={(e) => { e.target.style.borderColor = "#60a5fa"; e.target.style.boxShadow = "0 0 0 3px rgba(96,165,250,0.15)" }}
+                onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.boxShadow = "none" }}
+              />
+            </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1">
+          </div>
+
+          {/* 右欄：圖片庫 */}
+          <div style={{ width: 224, flexShrink: 0, borderLeft: "1px solid #f3f4f6", display: "flex", flexDirection: "column", background: "rgba(249,250,251,0.6)" }}>
+
+            <div style={{ padding: "20px 16px 12px", flexShrink: 0, borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">圖片庫</span>
+                <button onClick={searchImages} disabled={isSearching} className="text-xs font-medium text-blue-500 hover:text-blue-600 disabled:opacity-40 cursor-pointer transition-colors">
+                  {isSearching ? "搜尋中…" : "重新搜尋"}
+                </button>
+              </div>
+              {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
               {isSearching ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="w-40 flex-shrink-0 aspect-video bg-slate-100 rounded-lg animate-pulse" />
+                  <div key={i} className="w-full aspect-video bg-gray-200 rounded-lg animate-pulse" />
                 ))
               ) : (
                 <>
@@ -241,42 +263,35 @@ export default function CoverModal({ articleId, initialText, onClose }: Props) {
                     <button
                       key={img.id}
                       onClick={() => handleSelectImage(img)}
-                      className={`w-40 flex-shrink-0 aspect-video rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
-                        selectedId === img.id ? "border-blue-500 scale-105" : "border-transparent hover:border-slate-300"
+                      className={`relative w-full flex-shrink-0 aspect-video rounded-lg overflow-hidden cursor-pointer transition-all ${
+                        selectedId === img.id ? "ring-2 ring-blue-500 ring-offset-1" : "ring-1 ring-transparent hover:ring-gray-300 hover:ring-offset-1"
                       }`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={img.thumb_url} alt={img.alt} className="w-full h-full object-cover" />
+                      {selectedId === img.id && <div className="absolute inset-0 bg-blue-500/10" />}
                     </button>
                   ))}
                   {showAiButton && (
-                    <button
-                      onClick={handleAiGenerate}
-                      disabled={isGenerating}
-                      className="w-40 flex-shrink-0 aspect-video rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-1 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50 cursor-pointer transition-all"
-                    >
-                      <span className="text-lg">{isGenerating ? "⏳" : "✨"}</span>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        {isGenerating ? "生成中..." : "讓 AI 生成"}
-                      </span>
+                    <button onClick={handleAiGenerate} disabled={isGenerating} className="w-full flex-shrink-0 aspect-video rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1.5 hover:border-blue-400 hover:bg-blue-50/60 disabled:opacity-50 cursor-pointer transition-all">
+                      <span className="text-xl">{isGenerating ? "⏳" : "✨"}</span>
+                      <span className="text-xs text-gray-500 font-medium">{isGenerating ? "AI 生成中…" : "讓 AI 生成"}</span>
                     </button>
                   )}
                 </>
               )}
             </div>
           </div>
+
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-slate-100 flex justify-end">
-          <button
-            onClick={handleDownload}
-            disabled={!coverImage}
-            className="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm shadow-blue-200 active:scale-[0.98]"
-          >
+        <div style={{ flexShrink: 0, padding: "16px 24px", borderTop: "1px solid #f3f4f6", display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={handleDownload} disabled={!coverImage} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm active:scale-[0.98]">
             下載 JPG
           </button>
         </div>
+
       </div>
     </div>
   )

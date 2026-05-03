@@ -12,7 +12,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 const notoSansTC = Noto_Sans_TC({
   weight: ["700"],
-  subsets: ["latin", "chinese-traditional"],
+  subsets: ["latin"],
   variable: "--font-noto-sans-tc",
   display: "swap",
 })

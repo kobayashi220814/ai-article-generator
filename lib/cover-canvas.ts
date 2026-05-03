@@ -16,7 +16,8 @@ export async function loadCoverFont(): Promise<void> {
   if (fontLoaded) return
   const font = new FontFace(
     "Noto Sans TC",
-    "url(https://fonts.gstatic.com/s/notosanstc/v35/nKKF-GM_FYFRJvXzVXaAPe97P1KHynpCyAE.woff2)"
+    "url(https://fonts.gstatic.com/s/notosanstc/v35/nKKF-GM_FYFRJvXzVXaAPe97P1KHynpCyAE.woff2)",
+    { weight: "700" }
   )
   await font.load()
   document.fonts.add(font)

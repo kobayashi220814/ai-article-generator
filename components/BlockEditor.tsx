@@ -329,7 +329,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
         editor.replaceBlocks(editor.document, content as Parameters<typeof editor.replaceBlocks>[1])
         isInitializedRef.current = true
       } else if (content && typeof content === "object" && "type" in content && content.type === "html") {
-        const blocks = await editor.tryParseHTMLToBlocks((content as { raw: string }).raw)
+        const blocks = editor.tryParseHTMLToBlocks((content as { raw: string }).raw)
         editor.replaceBlocks(editor.document, blocks)
         isInitializedRef.current = true
 
@@ -428,11 +428,11 @@ export default function BlockEditor({ article, onUpdate }: Props) {
     )
     setCtaSending(true)
     try {
-      const html: string = await editor.blocksToHTMLLossy(editor.document)
+      const html: string = editor.blocksToHTMLLossy(editor.document)
       const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" })
       const markdown = td.turndown(html)
 
-      const res = await fetch("https://n8n.pressplay.cc/webhook/cta", {
+      const res = await fetch("/api/cta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, content: markdown }),

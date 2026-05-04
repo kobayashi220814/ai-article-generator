@@ -432,20 +432,15 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" })
       const markdown = td.turndown(html)
 
-      const res = await fetch("/api/cta", {
+      const res = await fetch("https://n8n.pressplay.cc/webhook/cta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, content: markdown }),
       })
 
-      // 讀 SSE stream，找 data: 開頭的行
-      const fullText = await res.text()
-      const dataLine = fullText.split("\n").find(l => l.startsWith("data: "))
-      if (!dataLine) return
-      const event = JSON.parse(dataLine.slice(6))
-      if (!event.ok || !event.raw?.trim()) return
-
-      const json = JSON.parse(event.raw)
+      const text = await res.text()
+      if (!text.trim()) return
+      const json = JSON.parse(text)
       const responseHtml: string = Array.isArray(json) ? (json[0]?.data ?? json[0]?.json?.data) : (json?.data ?? json?.json?.data)
 
       if (responseHtml) {

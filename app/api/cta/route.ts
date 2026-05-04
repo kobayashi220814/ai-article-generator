@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 
+export const maxDuration = 300 // 5 分鐘，對應 n8n 生成時間
+
 export async function POST(request: Request) {
   const body = await request.json()
 

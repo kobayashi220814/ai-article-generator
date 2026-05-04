@@ -432,7 +432,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" })
       const markdown = td.turndown(html)
 
-      const res = await fetch("/api/cta", {
+      const res = await fetch("https://n8n.pressplay.cc/webhook/cta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, content: markdown }),

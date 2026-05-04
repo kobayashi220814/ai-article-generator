@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { ArticleListItem, Article } from "@/lib/types"
 import Sidebar from "@/components/Sidebar"
 import Editor from "@/components/Editor"
@@ -11,6 +11,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [article, setArticle] = useState<Article | null>(null)
   const [isNew, setIsNew] = useState(true)
+  const articleCache = useRef<Map<string, Article>>(new Map())
 
   const fetchArticles = useCallback(async () => {
     const res = await fetch("/api/articles")
@@ -19,8 +20,11 @@ export default function Home() {
   }, [])
 
   const fetchArticle = useCallback(async (id: string) => {
+    const cached = articleCache.current.get(id)
+    if (cached) setArticle(cached)
     const res = await fetch(`/api/articles/${id}`)
     const data = await res.json()
+    articleCache.current.set(id, data)
     setArticle(data)
   }, [])
 
@@ -60,6 +64,7 @@ export default function Home() {
   }
 
   const handleArticleUpdate = useCallback((updated: Article) => {
+    articleCache.current.set(updated.id, updated)
     setArticle(updated)
     setArticles((prev) =>
       prev.map((a) => (a.id === updated.id ? { ...a, status: updated.status } : a))

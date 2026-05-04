@@ -432,7 +432,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" })
       const markdown = td.turndown(html)
 
-      const res = await fetch("https://n8n.pressplay.cc/webhook/cta", {
+      const res = await fetch("/api/cta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, content: markdown }),
@@ -441,7 +441,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       const text = await res.text()
       if (!text.trim()) return
       const json = JSON.parse(text)
-      const responseHtml: string = Array.isArray(json) ? (json[0]?.data ?? json[0]?.json?.data) : (json?.data ?? json?.json?.data)
+      const responseHtml: string = Array.isArray(json) ? json[0]?.data : json?.data
 
       if (responseHtml) {
         const newBlocks = editor.tryParseHTMLToBlocks(responseHtml)

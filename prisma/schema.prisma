@@ -20,3 +20,12 @@ model Article {
 
   @@map("articles")
 }
+
+model CtaJob {
+  id        String   @id @default(cuid())
+  status    String   @default("pending")
+  result    String?
+  createdAt DateTime @default(now())
+
+  @@map("cta_jobs")
+}

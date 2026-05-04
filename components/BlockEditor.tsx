@@ -432,16 +432,30 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" })
       const markdown = td.turndown(html)
 
-      const res = await fetch("/api/cta", {
+      const startRes = await fetch("/api/cta/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, content: markdown }),
       })
+      const { jobId } = await startRes.json()
 
-      const text = await res.text()
-      if (!text.trim()) return
-      const json = JSON.parse(text)
-      const responseHtml: string = Array.isArray(json) ? json[0]?.data : json?.data
+      const responseHtml = await new Promise<string | null>((resolve) => {
+        const es = new EventSource(`/api/cta/stream/${jobId}`)
+        es.onmessage = (e) => {
+          const data = JSON.parse(e.data)
+          if (data.status === "done") {
+            es.close()
+            resolve(data.result ?? null)
+          } else if (data.status === "error") {
+            es.close()
+            resolve(null)
+          }
+        }
+        es.onerror = () => {
+          es.close()
+          resolve(null)
+        }
+      })
 
       if (responseHtml) {
         const newBlocks = editor.tryParseHTMLToBlocks(responseHtml)

@@ -439,15 +439,27 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       })
 
       const text = await res.text()
+      console.log("[CTA] raw response:", text)
       if (!text.trim()) return
       const json = JSON.parse(text)
-      const responseHtml: string = Array.isArray(json) ? json[0]?.data : json?.data
+      console.log("[CTA] parsed json:", json)
+      const responseHtml: string = Array.isArray(json) ? (json[0]?.data ?? json[0]?.json?.data) : (json?.data ?? json?.json?.data)
+      console.log("[CTA] responseHtml:", responseHtml)
 
       if (responseHtml) {
-        const newBlocks = await editor.tryParseHTMLToBlocks(responseHtml)
+        const newBlocks = editor.tryParseHTMLToBlocks(responseHtml)
+        console.log("[CTA] newBlocks count:", newBlocks.length, newBlocks)
         const lastBlock = editor.document[editor.document.length - 1]
-        editor.insertBlocks(newBlocks, lastBlock, "after")
+        console.log("[CTA] lastBlock:", lastBlock)
+        if (newBlocks.length > 0 && lastBlock) {
+          editor.insertBlocks(newBlocks, lastBlock, "after")
+          console.log("[CTA] inserted successfully")
+        }
+      } else {
+        console.warn("[CTA] responseHtml is empty, check response structure")
       }
+    } catch (err) {
+      console.error("[CTA] error:", err)
     } finally {
       setCtaSending(false)
     }

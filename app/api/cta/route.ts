@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server"
-
 export const maxDuration = 300
 
 export async function POST(request: Request) {
@@ -8,10 +6,14 @@ export async function POST(request: Request) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      // 每 20 秒送空白，防止 nginx proxy_read_timeout 觸發
+      const send = (data: object) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
+      }
+
+      // 每 15 秒送 SSE comment 讓 nginx 不觸發 proxy_read_timeout
       const keepalive = setInterval(() => {
-        try { controller.enqueue(encoder.encode(" ")) } catch { /* stream already closed */ }
-      }, 20000)
+        try { controller.enqueue(encoder.encode(": ping\n\n")) } catch { /* closed */ }
+      }, 15000)
 
       try {
         const res = await fetch("https://n8n.pressplay.cc/webhook/cta", {
@@ -20,7 +22,9 @@ export async function POST(request: Request) {
           body: JSON.stringify(body),
         })
         const text = await res.text()
-        if (text.trim()) controller.enqueue(encoder.encode(text))
+        send({ ok: true, raw: text })
+      } catch (err) {
+        send({ ok: false, error: String(err) })
       } finally {
         clearInterval(keepalive)
         controller.close()
@@ -30,8 +34,9 @@ export async function POST(request: Request) {
 
   return new Response(stream, {
     headers: {
-      "Content-Type": "application/json",
-      "X-Accel-Buffering": "no", // 停用 nginx response buffering
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
     },
   })
 }

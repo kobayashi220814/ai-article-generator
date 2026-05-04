@@ -432,31 +432,28 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" })
       const markdown = td.turndown(html)
 
-      const res = await fetch("https://n8n.pressplay.cc/webhook/cta", {
+      const res = await fetch("/api/cta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, content: markdown }),
       })
 
-      const text = await res.text()
-      console.log("[CTA] raw response:", text)
-      if (!text.trim()) return
-      const json = JSON.parse(text)
-      console.log("[CTA] parsed json:", json)
+      // 讀 SSE stream，找 data: 開頭的行
+      const fullText = await res.text()
+      const dataLine = fullText.split("\n").find(l => l.startsWith("data: "))
+      if (!dataLine) return
+      const event = JSON.parse(dataLine.slice(6))
+      if (!event.ok || !event.raw?.trim()) return
+
+      const json = JSON.parse(event.raw)
       const responseHtml: string = Array.isArray(json) ? (json[0]?.data ?? json[0]?.json?.data) : (json?.data ?? json?.json?.data)
-      console.log("[CTA] responseHtml:", responseHtml)
 
       if (responseHtml) {
         const newBlocks = editor.tryParseHTMLToBlocks(responseHtml)
-        console.log("[CTA] newBlocks count:", newBlocks.length, newBlocks)
         const lastBlock = editor.document[editor.document.length - 1]
-        console.log("[CTA] lastBlock:", lastBlock)
         if (newBlocks.length > 0 && lastBlock) {
           editor.insertBlocks(newBlocks, lastBlock, "after")
-          console.log("[CTA] inserted successfully")
         }
-      } else {
-        console.warn("[CTA] responseHtml is empty, check response structure")
       }
     } catch (err) {
       console.error("[CTA] error:", err)

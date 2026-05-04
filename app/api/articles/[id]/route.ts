@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { gzipJson } from "@/lib/gzip-response"
 
 export async function GET(
   _request: Request,
@@ -8,7 +9,7 @@ export async function GET(
   const { id } = await params
   const article = await prisma.article.findUnique({ where: { id } })
   if (!article) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  return NextResponse.json(article)
+  return gzipJson(article)
 }
 
 export async function PATCH(

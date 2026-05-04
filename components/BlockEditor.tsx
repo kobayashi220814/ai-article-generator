@@ -38,56 +38,6 @@ interface Props {
 type SaveState = "saved" | "saving" | "idle"
 type BlockType = "paragraph" | "heading" | "bulletListItem" | "numberedListItem"
 
-// ─── CTA Floating Input ───────────────────────────────────────────────────────
-
-function CTAInput({
-  onSubmit,
-  onClose,
-  sending,
-}: {
-  onSubmit: (url: string) => void
-  onClose: () => void
-  sending: boolean
-}) {
-  const [url, setUrl] = useState("")
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => { inputRef.current?.focus() }, [])
-
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && url.trim()) onSubmit(url.trim())
-    if (e.key === "Escape") onClose()
-  }
-
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border-b border-blue-200">
-      <span className="text-xs font-semibold text-blue-600 whitespace-nowrap">插入 CTA</span>
-      <input
-        ref={inputRef}
-        type="url"
-        placeholder="輸入 URL，按 Enter 送出..."
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        onKeyDown={handleKey}
-        disabled={sending}
-        className="flex-1 text-sm px-2.5 py-1 rounded border border-blue-200 bg-white outline-none focus:border-blue-400 disabled:opacity-50"
-      />
-      {sending ? (
-        <SpinnerIcon size={14} className="text-blue-500 flex-shrink-0" />
-      ) : (
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-blue-300 hover:text-blue-500 transition-colors text-lg leading-none flex-shrink-0"
-          title="取消"
-        >
-          ×
-        </button>
-      )}
-    </div>
-  )
-}
-
 // ─── Toolbar ────────────────────────────────────────────────────────────────
 
 const FONT_SIZES = [
@@ -104,10 +54,14 @@ const FONT_SIZES = [
 function EditorToolbar({
   editor,
   onInsertCTA,
+  ctaDisabled,
+  ctaSending,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   editor: any
   onInsertCTA: () => void
+  ctaDisabled: boolean
+  ctaSending: boolean
 }) {
   const [styles, setStyles] = useState<Record<string, boolean>>({})
   const [blockType, setBlockType] = useState<BlockType>("paragraph")
@@ -197,8 +151,14 @@ function EditorToolbar({
 
       <Sep />
 
-      <TBtn active={false} onClick={onInsertCTA} onMouseDown={prevent} label="插入 CTA">
-        <CTAIcon />
+      <TBtn
+        active={false}
+        onClick={onInsertCTA}
+        onMouseDown={prevent}
+        label={ctaDisabled ? "插入 CTA（需填寫 Promote URL 與短連結名稱）" : "插入 CTA"}
+        disabled={ctaDisabled || ctaSending}
+      >
+        {ctaSending ? <SpinnerIcon size={14} className="text-blue-500" /> : <CTAIcon />}
       </TBtn>
 
       <Sep />
@@ -273,13 +233,14 @@ function Sep() {
 }
 
 function TBtn({
-  active, onClick, onMouseDown, label, children,
+  active, onClick, onMouseDown, label, children, disabled,
 }: {
   active: boolean
   onClick: () => void
   onMouseDown: (e: React.MouseEvent) => void
   label: string
   children: React.ReactNode
+  disabled?: boolean
 }) {
   return (
     <button
@@ -287,8 +248,13 @@ function TBtn({
       title={label}
       onClick={onClick}
       onMouseDown={onMouseDown}
-      className={`flex items-center justify-center w-7 h-7 rounded cursor-pointer flex-shrink-0 ${
-        active ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+      disabled={disabled}
+      className={`flex items-center justify-center w-7 h-7 rounded flex-shrink-0 ${
+        disabled
+          ? "text-gray-300 cursor-not-allowed"
+          : active
+            ? "bg-blue-100 text-blue-700 cursor-pointer"
+            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"
       }`}
     >
       {children}
@@ -345,7 +311,6 @@ function CTAIcon() {
 
 export default function BlockEditor({ article, onUpdate }: Props) {
   const [saveState, setSaveState] = useState<SaveState>("idle")
-  const [showCTA, setShowCTA] = useState(false)
   const [ctaSending, setCtaSending] = useState(false)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isInitializedRef = useRef(false)
@@ -449,20 +414,33 @@ export default function BlockEditor({ article, onUpdate }: Props) {
     }, 2000)
   }, [editor, article.id, onUpdate])
 
-  const handleCTASubmit = useCallback(async (url: string) => {
+  const seo = article.seo as { promote_url?: string; short_link_name?: string } | null
+  const isValidUrl = (v: string) => { try { new URL(v); return true } catch { return false } }
+  const ctaDisabled = !seo?.promote_url || !isValidUrl(seo.promote_url) || !seo?.short_link_name?.trim()
+
+  const handleCTAInsert = useCallback(async () => {
+    const url = seo?.promote_url ?? ""
+    const note = seo?.short_link_name ?? ""
+    const icsParams = new URLSearchParams({ note, redirect_url: url })
+    window.open(
+      `https://ics-admin.pressplay.cc/admin/pressplay/promote/ad_link/add?${icsParams}`,
+      "_blank"
+    )
     setCtaSending(true)
     try {
       const html: string = await editor.blocksToHTMLLossy(editor.document)
       const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" })
       const markdown = td.turndown(html)
 
-      const res = await fetch("https://n8n.pressplay.cc/webhook/cta", {
+      const res = await fetch("/api/cta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, content: markdown }),
       })
 
-      const json = await res.json()
+      const text = await res.text()
+      if (!text.trim()) return
+      const json = JSON.parse(text)
       const responseHtml: string = Array.isArray(json) ? json[0]?.data : json?.data
 
       if (responseHtml) {
@@ -472,9 +450,8 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       }
     } finally {
       setCtaSending(false)
-      setShowCTA(false)
     }
-  }, [editor])
+  }, [editor, seo])
 
   return (
     <div className="relative min-h-full flex flex-col">
@@ -501,16 +478,14 @@ export default function BlockEditor({ article, onUpdate }: Props) {
         </div>
       </div>
 
-      {/* Formatting toolbar + CTA input */}
+      {/* Formatting toolbar */}
       <div className="sticky top-[37px] z-10 bg-white">
-        <EditorToolbar editor={editor} onInsertCTA={() => setShowCTA(true)} />
-        {showCTA && (
-          <CTAInput
-            onSubmit={handleCTASubmit}
-            onClose={() => setShowCTA(false)}
-            sending={ctaSending}
-          />
-        )}
+        <EditorToolbar
+          editor={editor}
+          onInsertCTA={handleCTAInsert}
+          ctaDisabled={ctaDisabled}
+          ctaSending={ctaSending}
+        />
       </div>
 
       {/* Editor content */}

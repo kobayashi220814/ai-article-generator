@@ -9,8 +9,8 @@ export interface ArticleListItem {
 
 export interface Seo {
   selected_title?: string
-  meta_description?: string
-  slug?: string
+  promote_url?: string
+  short_link_name?: string
 }
 
 export interface Article extends ArticleListItem {

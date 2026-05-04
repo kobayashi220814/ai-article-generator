@@ -35,8 +35,8 @@ function SkeletonBlock({ rows = 3 }: { rows?: number }) {
 
 export default function SeoPanel({ article, onUpdate }: Props) {
   const [selectedTitle, setSelectedTitle] = useState("")
-  const [metaDescription, setMetaDescription] = useState("")
-  const [slug, setSlug] = useState("")
+  const [promoteUrl, setPromoteUrl] = useState("")
+  const [shortLinkName, setShortLinkName] = useState("")
   const [coverModalOpen, setCoverModalOpen] = useState(false)
   const [coverState, setCoverState] = useState<CoverState | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -44,8 +44,8 @@ export default function SeoPanel({ article, onUpdate }: Props) {
   useEffect(() => {
     const seo = article?.seo as Seo | null
     setSelectedTitle(seo?.selected_title ?? "")
-    setMetaDescription(seo?.meta_description ?? "")
-    setSlug(seo?.slug ?? "")
+    setPromoteUrl(seo?.promote_url ?? "")
+    setShortLinkName(seo?.short_link_name ?? "")
     setCoverState(null)
   }, [article?.id])
 
@@ -79,19 +79,17 @@ export default function SeoPanel({ article, onUpdate }: Props) {
     saveSeo({ selected_title: value })
   }
 
-  const handleMetaChange = (value: string) => {
-    setMetaDescription(value)
-    saveSeo({ meta_description: value })
+  const handlePromoteUrlChange = (value: string) => {
+    setPromoteUrl(value)
+    saveSeo({ promote_url: value })
   }
 
-  const handleSlugChange = (value: string) => {
-    setSlug(value)
-    saveSeo({ slug: value })
+  const handleShortLinkNameChange = (value: string) => {
+    setShortLinkName(value)
+    saveSeo({ short_link_name: value })
   }
 
   const isPending = article?.status === "pending" || article?.status === "generating"
-  const metaLen = metaDescription.length
-  const metaOver = metaLen > 160
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -164,43 +162,28 @@ export default function SeoPanel({ article, onUpdate }: Props) {
               />
             </div>
 
-            {/* Meta Description */}
+            {/* Promote URL */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <SectionLabel>Meta Description</SectionLabel>
-                <span className={`text-[10px] font-medium ${metaOver ? "text-red-500" : "text-slate-400"}`}>
-                  {metaLen}/160
-                </span>
-              </div>
-              <textarea
-                value={metaDescription}
-                onChange={(e) => handleMetaChange(e.target.value)}
-                placeholder="描述文章主要內容（建議 120~160 字）"
-                rows={4}
-                className={`w-full px-3 py-2.5 text-xs text-slate-700 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:bg-white resize-none placeholder:text-slate-300 leading-relaxed ${
-                  metaOver
-                    ? "border-red-300 focus:ring-red-500/30 focus:border-red-400"
-                    : "border-slate-200 focus:ring-blue-500/30 focus:border-blue-400"
-                }`}
+              <SectionLabel>Promote URL</SectionLabel>
+              <input
+                type="url"
+                value={promoteUrl}
+                onChange={(e) => handlePromoteUrlChange(e.target.value)}
+                placeholder="https://..."
+                className="w-full px-3 py-2.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white placeholder:text-slate-300 font-mono"
               />
-              {metaOver && (
-                <p className="text-[10px] text-red-500 mt-1">超過建議長度，搜尋引擎可能截斷</p>
-              )}
             </div>
 
-            {/* Slug */}
+            {/* 短連結名稱 */}
             <div>
-              <SectionLabel>網址 Slug</SectionLabel>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 select-none">/</span>
-                <input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  placeholder="article-url-slug"
-                  className="w-full pl-6 pr-3 py-2.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white placeholder:text-slate-300 font-mono"
-                />
-              </div>
+              <SectionLabel>短連結名稱</SectionLabel>
+              <input
+                type="text"
+                value={shortLinkName}
+                onChange={(e) => handleShortLinkNameChange(e.target.value)}
+                placeholder=""
+                className="w-full px-3 py-2.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white placeholder:text-slate-300"
+              />
             </div>
 
             {/* Divider */}

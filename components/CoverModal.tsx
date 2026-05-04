@@ -181,7 +181,8 @@ export default function CoverModal({ articleId, text, onTextChange, persistedSta
         const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = "cover.jpg"
+        const filename = text.replace(/\s*[\r\n]+\s*/g, " ").trim() || "cover"
+        a.download = `${filename}.jpg`
         a.click()
         URL.revokeObjectURL(url)
       },

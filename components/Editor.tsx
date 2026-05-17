@@ -145,10 +145,6 @@ export default function Editor({ article, isNew, onGenerate, onRetry, onArticleU
               開始生成文章
             </button>
           </form>
-
-          <p className="text-xs text-slate-400 text-center mt-4">
-            使用 Mock 模式約需 10 秒；正式 AI 約 10~15 分鐘
-          </p>
         </div>
       </div>
     )
@@ -202,8 +198,7 @@ export default function Editor({ article, isNew, onGenerate, onRetry, onArticleU
             關鍵字：<span className="font-medium text-slate-700">「{article.keyword}」</span>
           </p>
           <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-            AI 正在撰寫高品質 SEO 文章<br />
-            Mock 模式約需 10 秒，請稍候⋯
+            AI 正在撰寫高品質 SEO 文章，請稍候⋯
           </p>
         </div>
         <style>{`

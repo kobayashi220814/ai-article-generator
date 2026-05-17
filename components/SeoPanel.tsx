@@ -40,14 +40,28 @@ export default function SeoPanel({ article, onUpdate }: Props) {
   const [coverModalOpen, setCoverModalOpen] = useState(false)
   const [coverState, setCoverState] = useState<CoverState | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const coverPrefetchingRef = useRef(false)
+
+  const preFetchCoverImages = useCallback((articleId: string) => {
+    if (coverPrefetchingRef.current) return
+    coverPrefetchingRef.current = true
+    fetch(`/api/articles/${articleId}/cover-search`, { method: "POST" })
+      .then(res => res.json())
+      .then(data => setCoverState({ images: data.images ?? [], searchTerms: data.search_terms ?? [], selectedId: null }))
+      .catch(() => {})
+      .finally(() => { coverPrefetchingRef.current = false })
+  }, [])
 
   useEffect(() => {
     const seo = article?.seo as Seo | null
-    setSelectedTitle(seo?.selected_title ?? "")
+    const title = seo?.selected_title ?? ""
+    setSelectedTitle(title)
     setPromoteUrl(seo?.promote_url ?? "")
     setShortLinkName(seo?.short_link_name ?? "")
     setCoverState(null)
-  }, [article?.id])
+    coverPrefetchingRef.current = false
+    if (title.trim() && article) preFetchCoverImages(article.id)
+  }, [article?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveSeo = useCallback(
     (patch: Partial<Seo>) => {
@@ -73,6 +87,7 @@ export default function SeoPanel({ article, onUpdate }: Props) {
   const handleTitleSelect = (title: string) => {
     setSelectedTitle(title)
     saveSeo({ selected_title: title })
+    if (article && !coverState) preFetchCoverImages(article.id)
   }
 
   const handleTitleChange = (value: string) => {

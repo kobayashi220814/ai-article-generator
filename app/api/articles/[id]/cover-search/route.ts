@@ -40,7 +40,12 @@ export async function POST(
   const article = await prisma.article.findUnique({ where: { id } })
   if (!article) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  const seo = article.seo as { selected_title?: string } | null
+  const seo = article.seo as { selected_title?: string; cover_cache?: { search_terms: string[]; images: unknown[] } } | null
+
+  if (seo?.cover_cache?.images?.length) {
+    return NextResponse.json({ search_terms: seo.cover_cache.search_terms, images: seo.cover_cache.images })
+  }
+
   const keyword = article.keyword
   const title = seo?.selected_title ?? keyword
 
@@ -84,6 +89,11 @@ Example output: {"terms": ["bank money cash", "financial crisis"]}`,
     full_url: p.urls.regular,
     alt: p.alt_description ?? "",
   }))
+
+  await prisma.article.update({
+    where: { id },
+    data: { seo: { ...(seo ?? {}), cover_cache: { search_terms: searchTerms, images } } },
+  })
 
   return NextResponse.json({ search_terms: searchTerms, images })
 }

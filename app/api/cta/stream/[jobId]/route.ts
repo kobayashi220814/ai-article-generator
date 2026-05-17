@@ -35,7 +35,7 @@ export async function GET(
             return
           }
 
-          setTimeout(poll, 3000)
+          setTimeout(poll, 1000)
         } catch {
           send({ status: "error", message: "Server error" })
           controller.close()

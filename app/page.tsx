@@ -1,17 +1,40 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { Suspense, useState, useEffect, useCallback, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArticleListItem, Article } from "@/lib/types"
 import Sidebar from "@/components/Sidebar"
 import Editor from "@/components/Editor"
 import SeoPanel from "@/components/SeoPanel"
 
-export default function Home() {
+export default function Page() {
+  return (
+    <Suspense>
+      <Home />
+    </Suspense>
+  )
+}
+
+function Home() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   const [articles, setArticles] = useState<ArticleListItem[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(
+    searchParams.get("article")
+  )
   const [article, setArticle] = useState<Article | null>(null)
-  const [isNew, setIsNew] = useState(true)
+  const [isNew, setIsNew] = useState(!searchParams.get("article"))
   const articleCache = useRef<Map<string, Article>>(new Map())
+
+  const selectArticle = useCallback((id: string | null) => {
+    setSelectedId(id)
+    if (id) {
+      router.replace(`/?article=${id}`, { scroll: false })
+    } else {
+      router.replace("/", { scroll: false })
+    }
+  }, [router])
 
   const fetchArticles = useCallback(async () => {
     const res = await fetch("/api/articles")
@@ -40,7 +63,7 @@ export default function Home() {
   }, [selectedId, fetchArticle])
 
   const handleNewArticle = () => {
-    setSelectedId(null)
+    selectArticle(null)
     setArticle(null)
     setIsNew(true)
   }
@@ -53,7 +76,7 @@ export default function Home() {
     })
     const data = await res.json()
     await fetchArticles()
-    setSelectedId(data.id)
+    selectArticle(data.id)
     setIsNew(false)
   }
 
@@ -86,7 +109,7 @@ export default function Home() {
         <Sidebar
           articles={articles}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={selectArticle}
           onNew={handleNewArticle}
           onDelete={handleDelete}
         />

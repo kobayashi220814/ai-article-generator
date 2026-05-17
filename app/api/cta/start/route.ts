@@ -8,7 +8,7 @@ export async function POST(request: Request) {
 
   const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/cta/callback/${job.id}`
 
-  await fetch("https://n8n.pressplay.cc/webhook/cta", {
+  await fetch(process.env.N8N_CTA_WEBHOOK_URL ?? "https://n8n.pressplay.cc/webhook/cta", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url, content, callback_url: callbackUrl }),

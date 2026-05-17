@@ -7,10 +7,18 @@ export interface ArticleListItem {
   createdAt: string
 }
 
+export interface CoverCacheImage {
+  id: string
+  thumb_url: string
+  full_url: string
+  alt: string
+}
+
 export interface Seo {
   selected_title?: string
   promote_url?: string
   short_link_name?: string
+  cover_cache?: { search_terms: string[]; images: CoverCacheImage[] }
 }
 
 export interface Article extends ArticleListItem {

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
 
+const TIMEOUT_MS = 30 * 60 * 1000
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -18,11 +20,22 @@ export async function GET(
         try {
           const article = await prisma.article.findUnique({
             where: { id },
-            select: { status: true, errorMsg: true },
+            select: { status: true, errorMsg: true, createdAt: true },
           })
 
           if (!article) {
             send({ status: "error", message: "Article not found" })
+            controller.close()
+            return
+          }
+
+          const pending = article.status === "pending" || article.status === "generating"
+          if (pending && Date.now() - article.createdAt.getTime() > TIMEOUT_MS) {
+            await prisma.article.update({
+              where: { id },
+              data: { status: "error", errorMsg: "生成逾時（超過 30 分鐘）" },
+            })
+            send({ status: "error", message: "生成逾時（超過 30 分鐘）" })
             controller.close()
             return
           }

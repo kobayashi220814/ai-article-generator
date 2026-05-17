@@ -57,6 +57,15 @@ export default function CoverModal({ articleId, text, onTextChange, persistedSta
     loadCoverFont().catch(console.error)
   }, [])
 
+  // ESC 關閉
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [onClose])
+
   // 恢復上次選取的圖片
   useEffect(() => {
     if (!persistedState?.selectedId || !persistedState.images.length) return
@@ -205,7 +214,7 @@ export default function CoverModal({ articleId, text, onTextChange, persistedSta
         <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
 
           {/* 左欄：預覽 + 文字 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: 24, flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: 24, flex: 1, minWidth: 0, minHeight: 0, overflowY: "auto" }}>
 
             {/* Canvas 16:9 容器 */}
             <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", background: "#111827", borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>

@@ -54,13 +54,11 @@ const FONT_SIZES = [
 function EditorToolbar({
   editor,
   onInsertCTA,
-  ctaDisabled,
   ctaSending,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   editor: any
   onInsertCTA: () => void
-  ctaDisabled: boolean
   ctaSending: boolean
 }) {
   const [styles, setStyles] = useState<Record<string, boolean>>({})
@@ -155,8 +153,8 @@ function EditorToolbar({
         active={false}
         onClick={onInsertCTA}
         onMouseDown={prevent}
-        label={ctaDisabled ? "插入 CTA（需填寫 Promote URL 與短連結名稱）" : "插入 CTA"}
-        disabled={ctaDisabled || ctaSending}
+        label="插入 CTA"
+        disabled={ctaSending}
       >
         {ctaSending ? <SpinnerIcon size={14} className="text-blue-500" /> : <CTAIcon />}
       </TBtn>
@@ -416,11 +414,18 @@ export default function BlockEditor({ article, onUpdate }: Props) {
 
   const seo = article.seo as { promote_url?: string; short_link_name?: string } | null
   const isValidUrl = (v: string) => { try { new URL(v); return true } catch { return false } }
-  const ctaDisabled = !seo?.promote_url || !isValidUrl(seo.promote_url) || !seo?.short_link_name?.trim()
 
   const handleCTAInsert = useCallback(async () => {
-    const url = seo?.promote_url ?? ""
-    const note = seo?.short_link_name ?? ""
+    const url = seo?.promote_url?.trim() ?? ""
+    const note = seo?.short_link_name?.trim() ?? ""
+    if (!url || !note) {
+      alert("Promote URL 與短連結名稱不能為空")
+      return
+    }
+    if (!isValidUrl(url)) {
+      alert("Promote URL 格式錯誤")
+      return
+    }
     const icsParams = new URLSearchParams({ note, redirect_url: url })
     window.open(
       `https://ics-admin.pressplay.cc/admin/pressplay/promote/ad_link/add?${icsParams}`,
@@ -501,7 +506,6 @@ export default function BlockEditor({ article, onUpdate }: Props) {
         <EditorToolbar
           editor={editor}
           onInsertCTA={handleCTAInsert}
-          ctaDisabled={ctaDisabled}
           ctaSending={ctaSending}
         />
       </div>

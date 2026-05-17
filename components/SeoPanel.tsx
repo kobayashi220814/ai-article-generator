@@ -52,11 +52,12 @@ export default function SeoPanel({ article, onUpdate }: Props) {
   const saveSeo = useCallback(
     (patch: Partial<Seo>) => {
       if (!article) return
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      const currentSeo = (article.seo as Seo) ?? {}
+      const newSeo = { ...currentSeo, ...patch }
+      onUpdate({ ...article, seo: newSeo })
 
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
       saveTimerRef.current = setTimeout(async () => {
-        const currentSeo = (article.seo as Seo) ?? {}
-        const newSeo = { ...currentSeo, ...patch }
         const res = await fetch(`/api/articles/${article.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

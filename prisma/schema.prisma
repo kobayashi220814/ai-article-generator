@@ -8,15 +8,16 @@ datasource db {
 }
 
 model Article {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  keyword   String
-  status    String   @default("pending")
-  content   Json?
-  titles    String[]
-  seo       Json?
-  errorMsg  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keyword        String
+  status         String   @default("pending")
+  content        Json?
+  titles         String[]
+  seo            Json?
+  errorMsg       String?
+  n8nExecutionId String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("articles")
 }

@@ -1,23 +1,26 @@
 // ==UserScript==
 // @name         匯入 AI 文章產生器（PressPlay 編輯器）
 // @namespace    pressplay-import-ai-article
-// @version      1.0
+// @version      1.1
 // @description  在 PressPlay 文章編輯頁，從 AI 文章產生器一鍵匯入標題與內文（含套樣式）
 // @author       wade7
 // @match        *://*.pressplay.cc/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
+// @connect      ai-article-generator.wade-lin.com
 // @connect      localhost
 // @connect      127.0.0.1
-// @connect      ai-article-generator.wade-lin.com
 // @run-at       document-end
+// @updateURL    https://raw.githubusercontent.com/kobayashi220814/ai-article-generator/main/scripts/import-from-ai-generator.user.js
+// @downloadURL  https://raw.githubusercontent.com/kobayashi220814/ai-article-generator/main/scripts/import-from-ai-generator.user.js
 // ==/UserScript==
 
 (function () {
   'use strict';
 
   // ─── 設定 ─────────────────────────────────────────────────────────────────
-  const API_BASE = 'http://localhost:3000'; // 本地測試；正式環境改成 https://ai-article-generator.wade-lin.com
+  // 切換來源：正式 = https://ai-article-generator.wade-lin.com；本地 = http://localhost:3000
+  const API_BASE = 'https://ai-article-generator.wade-lin.com';
   const PAGE_ID_MATCH = 'cc_project_content_article_edit'; // body[data-page-id]
 
   // ─── 只在編輯頁面跑 ────────────────────────────────────────────────────────

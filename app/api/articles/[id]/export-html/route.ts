@@ -43,7 +43,19 @@ export async function GET(
     article.titles?.[0] ||
     article.keyword
 
-  const html = renderArticleHTML(article.content)
+  let html: string
+  try {
+    html = renderArticleHTML(article.content)
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error: "Failed to render HTML",
+        detail: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      },
+      { status: 500, headers: CORS_HEADERS }
+    )
+  }
 
   return NextResponse.json(
     {
@@ -104,6 +116,9 @@ function renderArticleHTML(content: unknown): string {
 }
 
 function blocksToHTML(blocks: BNBlock[]): string {
+  if (!Array.isArray(blocks)) {
+    throw new Error(`blocksToHTML: expected array, got ${typeof blocks}`)
+  }
   const out: string[] = []
   let currentList: "ul" | "ol" | null = null
 
@@ -168,6 +183,10 @@ function blockToHTML(block: BNBlock): string {
 }
 
 function inlineContentToHTML(items: BNInline[]): string {
+  if (!Array.isArray(items)) {
+    // BlockNote 對 table block 的 content 是 object，不是陣列；先跳過避免炸
+    return ""
+  }
   let html = ""
   for (const item of items) {
     if (item.type === "text") {

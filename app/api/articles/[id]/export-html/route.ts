@@ -93,6 +93,11 @@ type BNBlock = {
     textAlignment?: "left" | "center" | "right" | "justify"
     textColor?: string
     backgroundColor?: string
+    url?: string
+    caption?: string
+    name?: string
+    showPreview?: boolean
+    previewWidth?: number
   }
   content?: BNInline[]
   children?: BNBlock[]
@@ -176,6 +181,16 @@ function blockToHTML(block: BNBlock): string {
     case "numberedListItem": {
       const pStyle = align && align !== "left" ? ` style="text-align:${align}"` : ""
       return `<li><p${pStyle}><span style="font-size: 18px;">${inner || "<br>"}</span></p></li>`
+    }
+    case "image": {
+      const url = block.props?.url
+      if (!url) return ""
+      const caption = block.props?.caption ?? ""
+      const alignment = align && align !== "left" ? align : "left"
+      const pStyle = alignment !== "left" ? ` style="text-align:${alignment}"` : ""
+      const altAttr = caption ? ` alt="${escapeAttr(caption)}"` : ""
+      // Froala 標準圖片格式：fr-fic（floating image container）+ fr-dib（display: block）
+      return `<p${pStyle}><img src="${escapeAttr(url)}"${altAttr} class="fr-fic fr-dib" style="max-width:100%;height:auto;"></p>`
     }
     default:
       return `<p style="${STYLE.p}">${inner || "<br>"}</p>`

@@ -64,3 +64,4 @@
 - **本地 n8n MCP 無 REST API key** → 改工作流只能透過 `mcp__n8n-local__*` 工具，不能直接 curl。
 - **改 n8n 工作流 setting 透過 REST API 時** → 只能傳 `{"executionOrder": "v1"}`，`binaryMode` / `availableInMCP` 不被公開 API 接受。
 - **BlockNote `article.content` 不一定是陣列** → server-side 轉 HTML 時要 `Array.isArray()` 先擋。BlockNote 的 table block content 是 object 不是 array，直接 iterate 會炸 `TypeError: ... is not iterable`，在 production minified 後 stack trace 變數全變 `t`/`e`，完全看不出哪行。對策：route handler 一律包 `try/catch` 把 `err.message` 回給 client，比 SSH 翻 container log 快。
+- **Coolify build 偶爾因 Google Fonts 抓不到而失敗** → 錯誤訊息：`Turbopack build failed ... Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'`，[app/layout.tsx](app/layout.tsx) 從 `next/font/google` import 的字型在 build 時要連 `fonts.gstatic.com`，容器網路不穩就會炸。**不是程式碼問題**，重新觸發部署即可：`curl -H "Authorization: Bearer <token>" "https://coolify.wade-lin.com/api/v1/deploy?uuid=jn0mynxa545ecem8lo3yh5xt&force=true"`。若頻繁發生再考慮改用 `next/font/local`。

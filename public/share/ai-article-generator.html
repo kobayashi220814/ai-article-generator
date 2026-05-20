@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="googlebot" content="noindex, nofollow">
+<title>我把 7 個步驟變成 1 個輸入框 · AI 應用分享會</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --ink: #1A1A1A;
+    --ink-soft: #4A4A4A;
+    --ink-mute: #8A8A8A;
+    --line: #E8E8E8;
+    --line-soft: #F2F2F2;
+    --accent: #FF6B35;
+    --accent-soft: #FFF1E8;
+    --accent-line: rgba(255,107,53,0.25);
+    --type-skill-bg: #E8F0FF;
+    --type-skill-fg: #3B5BDB;
+    --type-mcp-bg: #FFF1E8;
+    --type-mcp-fg: #FF6B35;
+    --type-api-bg: #E6F4EA;
+    --type-api-fg: #2D8F3A;
+    --serif: 'Noto Sans TC', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #EFEFEF;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-feature-settings: "kern" 1, "palt" 0;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  .slide-deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  @media (min-width: 769px) {
+    .slide-deck {
+      max-width: calc(100vh * 16 / 9);
+      max-height: calc(100vw * 9 / 16);
+      margin: auto;
+      position: absolute;
+      inset: 0;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.08);
+    }
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    padding: 6vh 7vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .35s ease;
+    overflow: hidden;
+  }
+  .slide.active { opacity: 1; visibility: visible; }
+
+  .slide-num {
+    position: absolute;
+    top: 4vh;
+    right: 4vw;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-mute);
+    letter-spacing: 0.15em;
+  }
+
+  .kicker {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+
+  h1.title {
+    font-size: clamp(38px, 6vw, 84px);
+    font-weight: 900;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  h2.title {
+    font-size: clamp(34px, 5vw, 60px);
+    font-weight: 900;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 36px;
+  }
+  h2.title.compact { margin-bottom: 24px; }
+  h2.title .q-mark {
+    color: var(--accent);
+    font-family: 'Inter', sans-serif;
+    margin-right: 8px;
+  }
+
+  .subtitle {
+    font-size: clamp(18px, 1.9vw, 26px);
+    color: var(--ink-soft);
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  .accent { color: var(--accent); }
+  .strike { text-decoration: line-through; text-decoration-thickness: 3px; color: var(--ink-mute); }
+  .underline-accent {
+    background: linear-gradient(transparent 60%, var(--accent-soft) 60%);
+    padding: 0 4px;
+  }
+
+  /* === Cover === */
+  .cover { justify-content: center; }
+  .cover .cover-line {
+    width: 60px;
+    height: 4px;
+    background: var(--accent);
+    margin-bottom: 28px;
+  }
+  .cover h1 { margin-bottom: 28px; }
+  .cover .meta {
+    margin-top: 60px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-mute);
+    letter-spacing: 0.15em;
+  }
+  .cover .title-em {
+    color: var(--accent);
+    position: relative;
+    display: inline-block;
+  }
+  .cover .title-em::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 4px;
+    width: 100%;
+    height: 12px;
+    background: var(--accent-soft);
+    z-index: -1;
+  }
+
+  /* === Slide 2: Timeline of old workflow === */
+  .timeline {
+    margin-top: 4px;
+  }
+  .step-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 220px;
+    align-items: center;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .step-row:last-of-type { border-bottom: none; }
+  .step-no {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(16px, 1.5vw, 20px);
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .step-act {
+    font-size: clamp(18px, 1.8vw, 24px);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .step-pf {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    justify-self: end;
+    font-size: clamp(13px, 1.15vw, 16px);
+    font-weight: 500;
+    color: var(--ink-soft);
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: #FAFAFA;
+    border: 1px solid var(--line);
+  }
+  .pf-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .pf-dot.google { background: #4285F4; }
+  .pf-dot.notion { background: #1A1A1A; }
+  .pf-dot.canva  { background: #00C4CC; }
+  .pf-dot.back   { background: var(--accent); }
+
+  .timeline-footer {
+    margin-top: 24px;
+    font-size: clamp(16px, 1.45vw, 19px);
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .timeline-footer .em {
+    color: var(--accent);
+    font-weight: 800;
+  }
+
+  /* === Slide 3: 3 observations === */
+  .obs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-top: 12px;
+  }
+  .obs-card {
+    background: #FAFAFA;
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    padding: 36px 28px;
+    position: relative;
+  }
+  .obs-card .obs-tag {
+    position: absolute;
+    top: -12px; left: 24px;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+  .obs-card .obs-title {
+    font-size: clamp(22px, 2.2vw, 30px);
+    font-weight: 900;
+    color: var(--ink);
+    margin-bottom: 14px;
+    margin-top: 8px;
+  }
+  .obs-card .obs-desc {
+    font-size: clamp(14px, 1.2vw, 17px);
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+
+  /* === Slide 4: Question + 3-segment method === */
+  .q-subtitle {
+    font-size: clamp(17px, 1.6vw, 22px);
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-top: -16px;
+    margin-bottom: 32px;
+    max-width: 900px;
+  }
+  .q-subtitle .em {
+    color: var(--ink);
+    font-weight: 700;
+    background: var(--accent-soft);
+    padding: 0 6px;
+  }
+  .seg-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    align-items: stretch;
+  }
+  .seg {
+    border-radius: 16px;
+    padding: 32px 26px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .seg.seg-ai {
+    background: var(--accent-soft);
+    border: 2px solid var(--accent);
+  }
+  .seg.seg-glue {
+    background: #FAFAFA;
+    border: 2px solid var(--line);
+  }
+  .seg.seg-human {
+    background: #1A1A1A;
+    border: 2px solid #1A1A1A;
+    color: #fff;
+  }
+  .seg .seg-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    margin-bottom: 14px;
+  }
+  .seg.seg-ai .seg-label { color: var(--accent); }
+  .seg.seg-glue .seg-label { color: var(--ink-mute); }
+  .seg.seg-human .seg-label { color: rgba(255,255,255,0.6); }
+  .seg .seg-name {
+    font-size: clamp(22px, 2vw, 28px);
+    font-weight: 900;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .seg.seg-human .seg-name { color: #fff; }
+  .seg .seg-what {
+    font-size: clamp(14px, 1.15vw, 16px);
+    line-height: 1.7;
+    color: var(--ink-soft);
+  }
+  .seg.seg-human .seg-what { color: rgba(255,255,255,0.85); }
+  .seg .seg-tools {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--ink-mute);
+    letter-spacing: 0.05em;
+  }
+  .seg.seg-ai .seg-tools { border-color: var(--accent-line); color: var(--accent); }
+  .seg.seg-human .seg-tools { border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); }
+
+  /* === Slide 5: Compressed flow === */
+  .compress-head {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .compress-head .from {
+    font-size: clamp(28px, 3vw, 40px);
+    font-weight: 900;
+    color: var(--ink-mute);
+  }
+  .compress-head .arrow {
+    font-size: clamp(28px, 3vw, 40px);
+    color: var(--accent);
+    font-weight: 300;
+  }
+  .compress-head .to {
+    font-size: clamp(40px, 4.5vw, 60px);
+    font-weight: 900;
+    color: var(--accent);
+  }
+  .flow4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .flow4-step {
+    background: #FAFAFA;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 28px 16px;
+    text-align: center;
+    position: relative;
+  }
+  .flow4-step .num {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    margin-bottom: 12px;
+  }
+  .flow4-step .icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .flow4-step .name {
+    font-size: clamp(15px, 1.4vw, 20px);
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .flow4-step .sub {
+    font-size: clamp(11px, 0.95vw, 13px);
+    color: var(--ink-mute);
+    line-height: 1.5;
+  }
+  .flow4-step:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 22px;
+    z-index: 2;
+    background: #fff;
+    width: 26px;
+    text-align: center;
+  }
+
+  /* === Slide 6: 3 lessons === */
+  .lessons {
+    margin-top: 12px;
+  }
+  .lesson {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 32px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+  }
+  .lesson:last-child { border-bottom: none; }
+  .lesson .l-num {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(48px, 5vw, 72px);
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+    width: 80px;
+    text-align: left;
+  }
+  .lesson .l-title {
+    font-size: clamp(20px, 2vw, 28px);
+    font-weight: 900;
+    color: var(--ink);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  .lesson .l-desc {
+    font-size: clamp(14px, 1.2vw, 17px);
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+
+  /* === Slide 7: Skills/tools used === */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 8px;
+  }
+  .skill-card {
+    background: #FAFAFA;
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    padding: 44px 32px 28px;
+    position: relative;
+  }
+  .skill-type {
+    position: absolute;
+    top: 18px; left: 32px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    padding: 4px 12px;
+    border-radius: 4px;
+  }
+  .skill-type.type-skill { background: var(--type-skill-bg); color: var(--type-skill-fg); }
+  .skill-type.type-mcp   { background: var(--type-mcp-bg);   color: var(--type-mcp-fg); }
+  .skill-type.type-api   { background: var(--type-api-bg);   color: var(--type-api-fg); }
+
+  .skill-tech {
+    display: inline-block;
+    font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-mute);
+    margin-bottom: 12px;
+  }
+  .skill-name {
+    font-size: clamp(20px, 2vw, 28px);
+    font-weight: 900;
+    color: var(--ink);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .skill-use {
+    font-size: clamp(14px, 1.2vw, 16px);
+    color: var(--ink-soft);
+    line-height: 1.65;
+  }
+  .skills-footnote {
+    margin-top: 18px;
+    font-size: clamp(12px, 1.05vw, 14px);
+    color: var(--ink-soft);
+    text-align: left;
+  }
+  .skills-footnote strong { color: var(--ink); font-weight: 700; }
+
+  /* === Slide 8: CLAUDE.md showcase === */
+  .claude-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 24px;
+    margin-top: 12px;
+    align-items: stretch;
+  }
+  .claude-doc {
+    background: #1A1A1A;
+    color: #E8E8E8;
+    border-radius: 12px;
+    padding: 22px 24px;
+    font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+    font-size: clamp(10px, 0.9vw, 12.5px);
+    line-height: 1.65;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  }
+  .claude-doc::before {
+    content: 'CLAUDE.md';
+    position: absolute;
+    top: 8px; right: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.15em;
+  }
+  .claude-doc .doc-h {
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 8px;
+    margin-top: 14px;
+  }
+  .claude-doc .doc-h:first-child { margin-top: 0; }
+  .claude-doc .doc-p { color: #D0D0D0; margin-bottom: 6px; }
+  .claude-doc .doc-bullet {
+    color: #B8B8B8;
+    padding-left: 12px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .claude-doc .doc-bullet::before {
+    content: '·';
+    position: absolute;
+    left: 2px;
+    color: var(--accent);
+  }
+  .claude-doc .doc-em { color: var(--accent); }
+  .claude-doc .doc-comment { color: rgba(255,255,255,0.35); font-style: italic; }
+
+  .claude-toc {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 4px;
+  }
+  .claude-toc .toc-head {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 0.22em;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  .claude-toc .toc-list { list-style: none; }
+  .claude-toc .toc-list li {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 16px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line-soft);
+    align-items: baseline;
+  }
+  .claude-toc .toc-list li:last-child { border-bottom: none; }
+  .claude-toc .toc-h {
+    font-size: clamp(15px, 1.4vw, 19px);
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .claude-toc .toc-d {
+    font-size: clamp(13px, 1.1vw, 15px);
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .claude-link {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 22px;
+    padding: 10px 18px;
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    font-size: clamp(12px, 1.05vw, 14px);
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-decoration: none;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    transition: all 0.18s ease;
+  }
+  .claude-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .claude-link .link-arrow {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* === Slide 9: Self-assessment framework === */
+  .checklist {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .check-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+    background: #FAFAFA;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 24px 26px;
+    align-items: center;
+  }
+  .check-box {
+    width: 36px; height: 36px;
+    border: 2.5px solid var(--ink);
+    border-radius: 8px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .check-box::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 28px;
+    font-weight: 900;
+    opacity: 0.15;
+  }
+  .check-q {
+    font-size: clamp(17px, 1.5vw, 22px);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+  .check-eg {
+    font-size: clamp(13px, 1.05vw, 15px);
+    color: var(--ink-mute);
+    line-height: 1.5;
+  }
+  .check-conclusion {
+    margin-top: 20px;
+    padding: 18px 24px;
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    font-size: clamp(15px, 1.4vw, 19px);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .check-conclusion .em { color: var(--accent); font-weight: 900; }
+
+  /* === Slide 10: Closing (簡化版) === */
+  .closing {
+    justify-content: center;
+    text-align: center;
+  }
+  .closing .closing-title {
+    font-size: clamp(48px, 7vw, 96px);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 36px;
+  }
+  .closing .closing-title .em {
+    color: var(--accent);
+  }
+  .closing .closing-hint {
+    font-size: clamp(16px, 1.5vw, 20px);
+    color: var(--ink-mute);
+    line-height: 1.6;
+  }
+
+  /* Progress + Nav */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width .3s ease;
+    z-index: 1000;
+  }
+  .nav-controls {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 1000;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(8px);
+    padding: 8px 16px;
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--ink);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background .15s;
+  }
+  .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .slide-counter {
+    color: var(--ink-mute);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-variant-numeric: tabular-nums;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    .slide { padding: 5vh 6vw; }
+    .obs-grid, .seg-row, .flow4, .skills-grid { grid-template-columns: 1fr; }
+    .checklist { grid-template-columns: 1fr; }
+    .flow4-step:not(:last-child)::after { display: none; }
+    .compress-head { justify-content: center; }
+    .step-row { grid-template-columns: 50px 1fr; }
+    .step-pf { grid-column: 2; justify-self: start; margin-top: 4px; }
+    .claude-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="slide-deck">
+
+  <!-- ===== Slide 1：封面 ===== -->
+  <div class="slide cover active">
+    <span class="slide-num">01 / 08</span>
+    <div class="cover-line"></div>
+    <h1 class="title">我把 <span class="title-em">7 個步驟</span><br>變成 <span class="title-em">1 個輸入框</span></h1>
+    <p class="subtitle">分享：一個寫文章的 AI 工作流，<br>是怎麼從念頭，長成現在這樣的。</p>
+    <div class="meta">WADE LIN &nbsp;·&nbsp; AI 應用分享會 &nbsp;·&nbsp; 2026.05</div>
+  </div>
+
+  <!-- ===== Slide 2：發想契機（原本流程 timeline） ===== -->
+  <div class="slide">
+    <span class="slide-num">02 / 08</span>
+    <p class="kicker">為什麼做 / 1</p>
+    <h2 class="title compact">我以前寫一篇 SEO 文章，<br>大概長這樣</h2>
+
+    <div class="timeline">
+      <div class="step-row">
+        <span class="step-no">01</span>
+        <span class="step-act">抓網路文章</span>
+        <span class="step-pf"><span class="pf-dot google"></span>Google 搜尋</span>
+      </div>
+      <div class="step-row">
+        <span class="step-no">02</span>
+        <span class="step-act">統整文章架構</span>
+        <span class="step-pf"><span class="pf-dot notion"></span>Notion</span>
+      </div>
+      <div class="step-row">
+        <span class="step-no">03</span>
+        <span class="step-act">根據資料寫內文</span>
+        <span class="step-pf"><span class="pf-dot notion"></span>Notion</span>
+      </div>
+      <div class="step-row">
+        <span class="step-no">04</span>
+        <span class="step-act">調整內文</span>
+        <span class="step-pf"><span class="pf-dot notion"></span>Notion</span>
+      </div>
+      <div class="step-row">
+        <span class="step-no">05</span>
+        <span class="step-act">設計封面／標題</span>
+        <span class="step-pf"><span class="pf-dot canva"></span>Canva</span>
+      </div>
+      <div class="step-row">
+        <span class="step-no">06</span>
+        <span class="step-act">貼進後台</span>
+        <span class="step-pf"><span class="pf-dot back"></span>後台編輯器</span>
+      </div>
+      <div class="step-row">
+        <span class="step-no">07</span>
+        <span class="step-act">調整樣式</span>
+        <span class="step-pf"><span class="pf-dot back"></span>後台編輯器</span>
+      </div>
+    </div>
+
+    <p class="timeline-footer"><span class="em">7 個步驟、4 個平台</span>，每篇文章都要這樣跑一遍。</p>
+  </div>
+
+  <!-- ===== Slide 3：三個觀察 ===== -->
+  <div class="slide">
+    <span class="slide-num">03 / 08</span>
+    <p class="kicker">為什麼做 / 2</p>
+    <h2 class="title">做久了我發現三件事</h2>
+
+    <div class="obs-grid">
+      <div class="obs-card">
+        <span class="obs-tag">觀察 01</span>
+        <div class="obs-title">動作是重複的</div>
+        <div class="obs-desc">每篇都走一樣的順序，<br>只是關鍵字換、主題換。</div>
+      </div>
+      <div class="obs-card">
+        <span class="obs-tag">觀察 02</span>
+        <div class="obs-title">平台切到頭暈</div>
+        <div class="obs-desc">Google、Notion、Canva、後台，<br>光開分頁、貼來貼去就吃掉一堆時間。</div>
+      </div>
+      <div class="obs-card">
+        <span class="obs-tag">觀察 03</span>
+        <div class="obs-title">其實有固定章法</div>
+        <div class="obs-desc">「怎麼挑資料、怎麼下標、什麼風格」，<br>我心裡都有譜，只是沒寫下來。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Slide 4：為什麼不直接丟給 ChatGPT（含三段分配） ===== -->
+  <div class="slide">
+    <span class="slide-num">04 / 08</span>
+    <p class="kicker">為什麼這樣做</p>
+    <h2 class="title compact"><span class="q-mark">Q.</span>為什麼不直接丟給 ChatGPT 寫？</h2>
+    <p class="q-subtitle">因為「一句話請 AI 寫一篇」的成品都<span class="em">很模板、很走鐘</span>。<br>真正能用的版本，要把工作切成三段、各司其職：</p>
+
+    <div class="seg-row">
+      <div class="seg seg-ai">
+        <div class="seg-label">第一段</div>
+        <div class="seg-name">交給 AI 做</div>
+        <div class="seg-what">那些「有規矩、可重複」的勞動：找資料、列大綱、寫初稿、想標題。</div>
+        <div class="seg-tools">→ AI 模型</div>
+      </div>
+      <div class="seg seg-glue">
+        <div class="seg-label">第二段</div>
+        <div class="seg-name">用流水線串起來</div>
+        <div class="seg-what">把分散步驟黏成一條線，不用我自己切平台、手動接資料。</div>
+        <div class="seg-tools">→ n8n 自動化</div>
+      </div>
+      <div class="seg seg-human">
+        <div class="seg-label">第三段</div>
+        <div class="seg-name">人類最後一里</div>
+        <div class="seg-what">品味、口吻、敏感判斷，留給我自己。AI 出草稿、我做主編。</div>
+        <div class="seg-tools">→ 我自己</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Slide 5：壓縮成 4 步 ===== -->
+  <div class="slide">
+    <span class="slide-num">05 / 08</span>
+    <p class="kicker">做出來長什麼樣</p>
+    <h2 class="title compact">壓縮完之後，<br>剩下這四步</h2>
+
+    <div class="compress-head">
+      <span class="from"><span class="strike">7 步驟 × 4 平台</span></span>
+      <span class="arrow">→</span>
+      <span class="to">4 步驟、1 個頁面</span>
+    </div>
+
+    <div class="flow4">
+      <div class="flow4-step">
+        <div class="num">STEP 01</div>
+        <span class="icon">🔑</span>
+        <div class="name">輸入關鍵字</div>
+        <div class="sub">就一個欄位</div>
+      </div>
+      <div class="flow4-step">
+        <div class="num">STEP 02</div>
+        <span class="icon">🤖</span>
+        <div class="name">AI 自動生成</div>
+        <div class="sub">標題、內文、SEO</div>
+      </div>
+      <div class="flow4-step">
+        <div class="num">STEP 03</div>
+        <span class="icon">✍️</span>
+        <div class="name">我做最後一里</div>
+        <div class="sub">校稿、選封面</div>
+      </div>
+      <div class="flow4-step">
+        <div class="num">STEP 04</div>
+        <span class="icon">🚀</span>
+        <div class="name">一鍵丟後台</div>
+        <div class="sub">免複製貼上</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Slide 6：過程學到的三件事 ===== -->
+  <div class="slide">
+    <span class="slide-num">06 / 08</span>
+    <p class="kicker">過程中學到的事</p>
+    <h2 class="title">三個讓 AI 真的能上工的關鍵</h2>
+
+    <div class="lessons">
+      <div class="lesson">
+        <div class="l-num">01</div>
+        <div>
+          <div class="l-title">不能丟一句「幫我寫文章」就走</div>
+          <div class="l-desc">動作要拆細。AI 一次要做的事愈多、跑題愈遠。我切成「找資料、大綱、內文、標題」四段，每段都有自己的指令。</div>
+        </div>
+      </div>
+      <div class="lesson">
+        <div class="l-num">02</div>
+        <div>
+          <div class="l-title">心裡的規矩，要寫成文字</div>
+          <div class="l-desc">「我們不能這樣下標、客戶禁區是這些、字數大概多少」，寫成一份規範丟給 AI，就不用每次重講一遍。</div>
+        </div>
+      </div>
+      <div class="lesson">
+        <div class="l-num">03</div>
+        <div>
+          <div class="l-title">一定要留下「人類最後一里」</div>
+          <div class="l-desc">品味、口吻、敏感判斷，AI 還做不到位。校稿這一步留給自己。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Slide 7：用了哪些工具（6 個） ===== -->
+  <div class="slide">
+    <span class="slide-num">07 / 08</span>
+    <p class="kicker">揭露工具箱</p>
+    <h2 class="title compact">過程中，我請了這些 AI 工具來幫忙</h2>
+
+    <div class="skills-grid">
+      <div class="skill-card">
+        <span class="skill-type type-skill">SKILL</span>
+        <span class="skill-tech">brainstorming</span>
+        <div class="skill-name">陪我打點子</div>
+        <div class="skill-use">概念還很模糊時，AI 跟我一來一回對話，把「想做的事」釐清成「要做什麼」。</div>
+      </div>
+      <div class="skill-card">
+        <span class="skill-type type-skill">SKILL</span>
+        <span class="skill-tech">writing-plans</span>
+        <div class="skill-name">列出實作步驟</div>
+        <div class="skill-use">把模糊需求變成可勾選清單，每一步要碰什麼、做什麼判斷，全寫清楚再動手。</div>
+      </div>
+      <div class="skill-card">
+        <span class="skill-type type-mcp">MCP</span>
+        <span class="skill-tech">n8n MCP</span>
+        <div class="skill-name">操作 n8n 工作流</div>
+        <div class="skill-use">AI 直接建立、修改 n8n 流程，我不用自己去點介面、拉節點。</div>
+      </div>
+      <div class="skill-card">
+        <span class="skill-type type-api">API</span>
+        <span class="skill-tech">Jina</span>
+        <div class="skill-name">抓網頁、做語意處理</div>
+        <div class="skill-use">給一個網址，回乾淨的純文字內容；要做語意比對也是這套服務。</div>
+      </div>
+    </div>
+
+    <p class="skills-footnote">三種角色：<strong style="color:var(--type-skill-fg)">SKILL</strong> 教 AI 流程、<strong style="color:var(--type-mcp-fg)">MCP</strong> 讓 AI 操作工具、<strong style="color:var(--type-api-fg)">API</strong> 給 AI 接外部服務。</p>
+  </div>
+
+  <!-- ===== Slide 8：CLAUDE.md（員工手冊） ===== -->
+  <div class="slide">
+    <span class="slide-num">08 / 08</span>
+    <p class="kicker">規矩具體化</p>
+    <h2 class="title compact">這個專案的 CLAUDE.md，<br>長這樣<span class="q-mark" style="margin-left:0;">。</span></h2>
+
+    <div class="claude-grid">
+      <div class="claude-doc">
+        <div class="doc-h"># 專案架構</div>
+        <div class="doc-p">兩套對稱環境，三個元件各自獨立：</div>
+        <div class="doc-bullet">測試：localhost + Docker pg + 本地 n8n</div>
+        <div class="doc-bullet">正式：wade-lin.com + Coolify pg + pressplay n8n</div>
+
+        <div class="doc-h"># 常見坑</div>
+        <div class="doc-bullet"><span class="doc-em">本地 n8n 跑在 Docker 容器內</span>，callback URL 不能用 localhost → 從容器看 localhost 是它自己，要用 host.docker.internal。</div>
+        <div class="doc-bullet"><span class="doc-em">n8n 工作流改完沒生效</span> → 忘了 publish。activeVersionId 必須等於最新 versionId。</div>
+        <div class="doc-bullet"><span class="doc-em">不要簡化「假資料」節點內容</span> → 影響測試體驗，原本是完整長文章 mock。</div>
+        <div class="doc-bullet"><span class="doc-em">Coolify build 偶爾因 Google Fonts 抓不到失敗</span> → 不是程式碼問題，重新觸發部署即可。</div>
+
+        <div class="doc-comment">// ⋯ 還有 30 多條規則</div>
+      </div>
+
+      <div class="claude-toc">
+        <div class="toc-head">裡面寫了哪些東西</div>
+        <ul class="toc-list">
+          <li><span class="toc-h">專案架構</span><span class="toc-d">兩套環境（測試 ／ 正式）的對照表</span></li>
+          <li><span class="toc-h">n8n 工作流</span><span class="toc-d">兩邊的 ID、改哪邊要怎麼同步</span></li>
+          <li><span class="toc-h">環境變數</span><span class="toc-d">每個變數的測試值、正式值</span></li>
+          <li><span class="toc-h">資料流</span><span class="toc-d">文章從關鍵字到產出的完整路徑</span></li>
+          <li><span class="toc-h">部署</span><span class="toc-d">GitHub → Coolify → Cloudflare 的步驟</span></li>
+          <li><span class="toc-h">常見坑</span><span class="toc-d">30+ 條踩過的雷</span></li>
+        </ul>
+        <a href="https://github.com/kobayashi220814/ai-article-generator/blob/main/CLAUDE.md" target="_blank" rel="noopener" class="claude-link">
+          <span class="link-arrow">→</span> 看完整檔案（GitHub）
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+</div><!-- /.slide-deck -->
+
+<div class="nav-controls">
+  <button class="nav-btn" onclick="prevSlide()" aria-label="上一張">←</button>
+  <span class="slide-counter"><span id="current">1</span> / <span id="total">8</span></span>
+  <button class="nav-btn" onclick="nextSlide()" aria-label="下一張">→</button>
+</div>
+
+<script>
+  let current = 1;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  document.getElementById('total').textContent = total;
+
+  function showSlide(n) {
+    if (n < 1) n = 1;
+    if (n > total) n = total;
+    current = n;
+    slides.forEach((s, i) => s.classList.toggle('active', i === n - 1));
+    document.getElementById('current').textContent = n;
+    document.getElementById('progressBar').style.width = (n / total * 100) + '%';
+  }
+
+  function nextSlide() { showSlide(current + 1); }
+  function prevSlide() { showSlide(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Home') { e.preventDefault(); showSlide(1); }
+    if (e.key === 'End') { e.preventDefault(); showSlide(total); }
+  });
+
+  showSlide(1);
+</script>
+
+</body>
+</html>

@@ -127,7 +127,7 @@ export default function Sidebar({ articles, selectedId, onSelect, onNew, onDelet
                     <StatusIndicator status={article.status} />
                     <div className="flex-1 min-w-0">
                       <p className={`text-[13px] font-medium truncate leading-snug ${isSelected ? "text-slate-900" : "text-slate-700"}`}>
-                        {article.keyword}
+                        {article.keyword || "未命名文章"}
                       </p>
                       <p className="text-[11px] text-slate-400 mt-0.5">
                         {new Date(article.createdAt).toLocaleDateString("zh-TW", {

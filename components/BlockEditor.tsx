@@ -319,7 +319,11 @@ export default function BlockEditor({ article, onUpdate }: Props) {
     if (!editor || isInitializedRef.current) return
 
     const initEditor = async () => {
-      if (!article.content) return
+      if (!article.content) {
+        // 空白文章：content 為 null，直接標記已初始化，讓 handleChange 可以存檔
+        isInitializedRef.current = true
+        return
+      }
 
       const content = article.content as { type?: string; raw?: string } | unknown[]
 
@@ -483,7 +487,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-400">編輯中</span>
           <span className="text-slate-200">·</span>
-          <span className="text-xs text-slate-600 font-medium">{article.keyword}</span>
+          <span className="text-xs text-slate-600 font-medium">{article.keyword || "未命名文章"}</span>
         </div>
         <div className="flex items-center gap-1.5 h-5">
           {saveState === "saving" && (

@@ -80,6 +80,18 @@ function Home() {
     setIsNew(false)
   }
 
+  const handleCreateBlank = async () => {
+    const res = await fetch("/api/articles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "manual" }),
+    })
+    const data = await res.json()
+    await fetchArticles()
+    selectArticle(data.id)
+    setIsNew(false)
+  }
+
   const handleDelete = async (id: string) => {
     await fetch(`/api/articles/${id}`, { method: "DELETE" })
     await fetchArticles()
@@ -90,7 +102,11 @@ function Home() {
     articleCache.current.set(updated.id, updated)
     setArticle(updated)
     setArticles((prev) =>
-      prev.map((a) => (a.id === updated.id ? { ...a, status: updated.status } : a))
+      prev.map((a) =>
+        a.id === updated.id
+          ? { ...a, status: updated.status, keyword: updated.keyword }
+          : a
+      )
     )
   }, [])
 
@@ -120,6 +136,7 @@ function Home() {
           article={article}
           isNew={isNew}
           onGenerate={handleGenerate}
+          onCreateBlank={handleCreateBlank}
           onRetry={handleRetry}
           onArticleUpdate={handleArticleUpdate}
         />

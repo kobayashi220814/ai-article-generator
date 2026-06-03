@@ -1,8 +1,11 @@
 export type ArticleStatus = "pending" | "generating" | "done" | "error"
 
+export type ArticleSource = "ai" | "manual"
+
 export interface ArticleListItem {
   id: string
   keyword: string
+  source: ArticleSource
   status: ArticleStatus
   createdAt: string
 }

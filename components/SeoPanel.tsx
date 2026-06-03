@@ -106,6 +106,7 @@ export default function SeoPanel({ article, onUpdate }: Props) {
   }
 
   const isPending = article?.status === "pending" || article?.status === "generating"
+  const isManual = article?.source === "manual"
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -125,8 +126,8 @@ export default function SeoPanel({ article, onUpdate }: Props) {
           </div>
         ) : (
           <div className="p-4 space-y-5">
-            {/* AI Title Options */}
-            <div>
+            {/* AI Title Options — 空白文章不顯示 */}
+            {!isManual && <div>
               <SectionLabel>AI 標題選項</SectionLabel>
               {isPending ? (
                 <SkeletonBlock rows={3} />
@@ -161,7 +162,7 @@ export default function SeoPanel({ article, onUpdate }: Props) {
                   })}
                 </div>
               )}
-            </div>
+            </div>}
 
             {/* Divider */}
             <div className="border-t border-slate-100" />

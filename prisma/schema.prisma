@@ -10,6 +10,7 @@ datasource db {
 model Article {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   keyword        String
+  source         String   @default("ai")
   status         String   @default("pending")
   content        Json?
   titles         String[]

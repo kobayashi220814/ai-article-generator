@@ -10,13 +10,14 @@ interface Props {
   article: Article | null
   isNew: boolean
   onGenerate: (keyword: string) => void
+  onCreateBlank: () => void
   onRetry: () => void
   onArticleUpdate: (article: Article) => void
 }
 
 const TIMEOUT_MS = 30 * 60 * 1000
 
-export default function Editor({ article, isNew, onGenerate, onRetry, onArticleUpdate }: Props) {
+export default function Editor({ article, isNew, onGenerate, onCreateBlank, onRetry, onArticleUpdate }: Props) {
   const [keyword, setKeyword] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isTimedOut, setIsTimedOut] = useState(false)
@@ -145,6 +146,20 @@ export default function Editor({ article, isNew, onGenerate, onRetry, onArticleU
               開始生成文章
             </button>
           </form>
+
+          <div className="flex items-center gap-3 my-1">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-xs text-slate-400">或</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          <button
+            type="button"
+            onClick={onCreateBlank}
+            className="w-full py-3 bg-white text-slate-600 text-sm font-medium rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 cursor-pointer active:scale-[0.98]"
+          >
+            建立空白文章
+          </button>
         </div>
       </div>
     )

@@ -182,6 +182,8 @@ function blockToHTML(block: BNBlock): string {
       const pStyle = align && align !== "left" ? ` style="text-align:${align}"` : ""
       return `<li><p${pStyle}><span style="font-size: 18px;">${inner || "<br>"}</span></p></li>`
     }
+    case "table":
+      return tableToHTML(block)
     case "image": {
       const url = block.props?.url
       if (!url) return ""
@@ -195,6 +197,84 @@ function blockToHTML(block: BNBlock): string {
     default:
       return `<p style="${STYLE.p}">${inner || "<br>"}</p>`
   }
+}
+
+type BNTableCell = {
+  type?: "tableCell"
+  props?: {
+    colspan?: number
+    rowspan?: number
+    textAlignment?: "left" | "center" | "right" | "justify"
+    backgroundColor?: string
+    textColor?: string
+  }
+  content?: BNInline[]
+}
+
+// 舊版 BlockNote 的 cell 可能直接是 inline 陣列，新版是物件
+type BNTableCellLike = BNTableCell | BNInline[]
+
+type BNTableContent = {
+  type?: "tableContent"
+  headerRows?: number
+  columnWidths?: (number | null)[]
+  rows?: { cells?: BNTableCellLike[] }[]
+}
+
+function tableToHTML(block: BNBlock): string {
+  const content = block.content as unknown as BNTableContent | undefined
+  const rows = content?.rows
+  if (!Array.isArray(rows) || rows.length === 0) return ""
+
+  const headerRows = content?.headerRows ?? 0
+
+  // 對齊 PressPlay（Froala）編輯器原生 table 格式：
+  // - th：<span style="font-size: 18px;"><strong>…</strong><br></span>
+  // - td：colspan/rowspan 永遠帶值，內容包 <p><span style="font-size: 18px;">…</span></p>
+  // - table 不加 inline style，交給 Froala CSS 上色
+  const renderCell = (cell: BNTableCellLike, isHeader: boolean): string => {
+    const inline = Array.isArray(cell) ? cell : cell?.content ?? []
+    const props = Array.isArray(cell) ? undefined : cell?.props
+    const inner = inlineContentToHTML(inline)
+
+    const colspan = props?.colspan ?? 1
+    const rowspan = props?.rowspan ?? 1
+
+    if (isHeader) {
+      const span =
+        (colspan > 1 ? ` colspan="${colspan}"` : "") +
+        (rowspan > 1 ? ` rowspan="${rowspan}"` : "")
+      return `<th${span}><span style="font-size: 18px;"><strong>${inner || "<br>"}</strong><br></span></th>`
+    }
+
+    const pStyleParts: string[] = []
+    const align = props?.textAlignment
+    if (align && align !== "left") pStyleParts.push(`text-align:${align}`)
+    const pStyle = pStyleParts.length ? ` style="${pStyleParts.join(";")}"` : ""
+
+    return `<td colspan="${colspan}" rowspan="${rowspan}"><p${pStyle}><span style="font-size: 18px;">${inner || "<br>"}</span></p></td>`
+  }
+
+  const out: string[] = ["<table>"]
+
+  if (headerRows > 0) {
+    out.push("<thead>")
+    for (let i = 0; i < headerRows && i < rows.length; i++) {
+      const cells = rows[i].cells ?? []
+      out.push("<tr>" + cells.map((c) => renderCell(c, true)).join("") + "</tr>")
+    }
+    out.push("</thead>")
+  }
+
+  out.push("<tbody>")
+  for (let i = headerRows; i < rows.length; i++) {
+    const cells = rows[i].cells ?? []
+    out.push("<tr>" + cells.map((c) => renderCell(c, false)).join("") + "</tr>")
+  }
+  out.push("</tbody>")
+
+  out.push("</table>")
+  return out.join("")
 }
 
 function inlineContentToHTML(items: BNInline[]): string {

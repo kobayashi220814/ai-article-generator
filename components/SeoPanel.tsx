@@ -126,9 +126,9 @@ export default function SeoPanel({ article, onUpdate }: Props) {
           </div>
         ) : (
           <div className="p-4 space-y-5">
-            {/* AI Title Options — 空白文章不顯示 */}
-            {!isManual && <div>
-              <SectionLabel>AI 標題選項</SectionLabel>
+            {/* Title Options — 有 titles 才顯示 */}
+            {(article.titles?.length ?? 0) > 0 && <div>
+              <SectionLabel>標題選項</SectionLabel>
               {isPending ? (
                 <SkeletonBlock rows={3} />
               ) : !article.titles?.length ? (

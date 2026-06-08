@@ -33,7 +33,7 @@ export async function PATCH(
 ) {
   const { id } = await params
   const body = await request.json()
-  const { content, seo } = body
+  const { content, seo, titles } = body
 
   const existing = await prisma.article.findUnique({ where: { id }, select: { source: true } })
 
@@ -42,6 +42,7 @@ export async function PATCH(
     data: {
       ...(content !== undefined && { content }),
       ...(seo !== undefined && { seo }),
+      ...(titles !== undefined && { titles }),
       // manual 文章以內文第一行作為 keyword，供側邊欄列表顯示
       ...(content !== undefined && existing?.source === "manual" && {
         keyword: extractFirstLine(content),

@@ -314,6 +314,8 @@ export default function BlockEditor({ article, onUpdate }: Props) {
   const isInitializedRef = useRef(false)
 
   const editor = useCreateBlockNote({ schema: editorSchema })
+  // 預覽（唯讀）／編輯切換：唯讀時連結可單擊跳轉，預設維持編輯模式
+  const [editable, setEditable] = useState(true)
 
   useEffect(() => {
     if (!editor || isInitializedRef.current) return
@@ -485,7 +487,13 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       {/* Status bar */}
       <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur-sm border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-400">編輯中</span>
+          <button
+            onClick={() => setEditable((v) => !v)}
+            className="text-xs font-medium px-2 py-0.5 rounded border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
+          >
+            {editable ? "預覽" : "編輯"}
+          </button>
+          <span className="text-xs font-medium text-slate-400">{editable ? "編輯中" : "預覽中"}</span>
           <span className="text-slate-200">·</span>
           <span className="text-xs text-slate-600 font-medium">{article.keyword || "未命名文章"}</span>
         </div>
@@ -519,10 +527,13 @@ export default function BlockEditor({ article, onUpdate }: Props) {
         .bn-editor h2 { color: rgb(239, 135, 0); }
         .bn-editor h3 { color: rgb(21, 170, 191); }
         .bn-editor p { font-size: 18px; }
+        .bn-editor a { color: rgb(37, 99, 235); text-decoration: underline; }
+        .bn-editor a:hover { color: rgb(29, 78, 216); }
       `}</style>
       <div className="px-2 py-6 max-w-3xl mx-auto w-full">
         <BlockNoteView
           editor={editor}
+          editable={editable}
           onChange={handleChange}
           theme="light"
           formattingToolbar={false}

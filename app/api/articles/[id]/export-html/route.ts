@@ -98,6 +98,9 @@ type BNBlock = {
     name?: string
     showPreview?: boolean
     previewWidth?: number
+    href?: string
+    text?: string
+    uuid?: string
   }
   content?: BNInline[]
   children?: BNBlock[]
@@ -182,6 +185,12 @@ function blockToHTML(block: BNBlock): string {
       const pStyle = align && align !== "left" ? ` style="text-align:${align}"` : ""
       return `<li><p${pStyle}><span style="font-size: 18px;">${inner || "<br>"}</span></p></li>`
     }
+    case "ppButton": {
+      const href = escapeAttr(block.props?.href ?? "")
+      const text = escapeText(block.props?.text ?? "了解更多！")
+      const uuid = block.props?.uuid ?? ""
+      return `<p data-pp-ai-uuid="${uuid}" style="text-align: center;"><a class="btn btn-primary" href="${href}" style="color: #FFF!important;text-align: right ; font-size:18px;padding:10px 20px; border-radius:7px;">${text}</a></p>`
+    }
     case "table":
       return tableToHTML(block)
     case "image": {
@@ -191,6 +200,14 @@ function blockToHTML(block: BNBlock): string {
       const alignment = align && align !== "left" ? align : "left"
       const pStyle = alignment !== "left" ? ` style="text-align:${alignment}"` : ""
       const altAttr = caption ? ` alt="${escapeAttr(caption)}"` : ""
+      // 圖片連結存在 image block 的 name 欄位（http(s) 或站內絕對路徑才視為連結）
+      const link = (block.props?.name ?? "").trim()
+      const hasLink = /^(https?:\/\/|\/)/.test(link)
+      if (hasLink) {
+        // 連結圖片：Froala 內嵌圖片格式 fr-dii（display: inline）+ fr-draggable，外包 js-outside-link
+        const img = `<img${altAttr} class="fr-dii fr-draggable" src="${escapeAttr(url)}" style="max-width:100%;height:auto;">`
+        return `<p${pStyle}><a href="${escapeAttr(link)}" name="" class="js-outside-link" target="_blank" rel="noopener noreferrer">${img}</a></p>`
+      }
       // Froala 標準圖片格式：fr-fic（floating image container）+ fr-dib（display: block）
       return `<p${pStyle}><img src="${escapeAttr(url)}"${altAttr} class="fr-fic fr-dib" style="max-width:100%;height:auto;"></p>`
     }

@@ -1010,6 +1010,23 @@ export default function BlockEditor({ article, onUpdate }: Props) {
   // 預覽（唯讀）／編輯切換：唯讀時連結可單擊跳轉，預設維持編輯模式
   const [editable, setEditable] = useState(true)
 
+  // BlockNote 的 tryParseHTMLToBlocks 對「連續的 <p>+<ul> 區塊」會整批漏掉清單
+  // （單一清單正常，多組相鄰時 <li> 會消失）。改成逐個頂層節點分別 parse 再串接，
+  // 讓每個清單都以「單一清單」的形式被解析，避免內容遺失。
+  const parseHTMLToBlocksSafe = useCallback(
+    (html: string): ReturnType<typeof editor.tryParseHTMLToBlocks> => {
+      const doc = new DOMParser().parseFromString(html, "text/html")
+      const nodes = Array.from(doc.body.children)
+      if (nodes.length <= 1) return editor.tryParseHTMLToBlocks(html)
+      const all = [] as unknown as ReturnType<typeof editor.tryParseHTMLToBlocks>
+      for (const el of nodes) {
+        all.push(...editor.tryParseHTMLToBlocks(el.outerHTML))
+      }
+      return all
+    },
+    [editor]
+  )
+
   useEffect(() => {
     if (!editor || isInitializedRef.current) return
 
@@ -1026,7 +1043,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
         editor.replaceBlocks(editor.document, content as Parameters<typeof editor.replaceBlocks>[1])
         isInitializedRef.current = true
       } else if (content && typeof content === "object" && "type" in content && content.type === "html") {
-        const blocks = editor.tryParseHTMLToBlocks((content as { raw: string }).raw)
+        const blocks = parseHTMLToBlocksSafe((content as { raw: string }).raw)
         editor.replaceBlocks(editor.document, blocks)
         isInitializedRef.current = true
 
@@ -1162,7 +1179,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
       })
 
       if (responseHtml) {
-        const newBlocks = editor.tryParseHTMLToBlocks(responseHtml)
+        const newBlocks = parseHTMLToBlocksSafe(responseHtml)
         const lastBlock = editor.document[editor.document.length - 1]
         if (newBlocks.length > 0 && lastBlock) {
           editor.insertBlocks(newBlocks, lastBlock, "after")
@@ -1173,7 +1190,7 @@ export default function BlockEditor({ article, onUpdate }: Props) {
     } finally {
       setCtaSending(false)
     }
-  }, [editor, seo])
+  }, [editor, seo, parseHTMLToBlocksSafe])
 
   return (
     <div className="relative min-h-full flex flex-col">

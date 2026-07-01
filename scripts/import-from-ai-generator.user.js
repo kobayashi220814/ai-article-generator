@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         匯入 AI 文章產生器（PressPlay 編輯器）
 // @namespace    pressplay-import-ai-article
-// @version      1.1
-// @description  在 PressPlay 文章編輯頁，從 AI 文章產生器一鍵匯入標題與內文（含套樣式）
+// @version      1.2
+// @description  在 PressPlay 文章編輯頁，從 AI 文章產生器一鍵匯入標題與內文，並可一鍵把編輯器現有內容套成標準格式
 // @author       wade7
 // @match        *://*.pressplay.cc/*
 // @grant        GM_xmlhttpRequest
@@ -22,6 +22,9 @@
   // 切換來源：正式 = https://ai-article-generator.wade-lin.com；本地 = http://localhost:3000
   const API_BASE = 'https://ai-article-generator.wade-lin.com';
   const PAGE_ID_MATCH = 'cc_project_content_article_edit'; // body[data-page-id]
+
+  // 標準格式定義（對齊 export-html/route.ts 的 STYLE）
+  const FMT = { font: '18px', h2Color: 'rgb(239,135,0)', h3Color: 'rgb(21,170,191)' };
 
   // ─── 只在編輯頁面跑 ────────────────────────────────────────────────────────
   if (document.body?.dataset?.pageId !== PAGE_ID_MATCH) {
@@ -66,6 +69,19 @@
       }
       #aig-fab:hover { transform: scale(1.05); }
       #aig-fab:active { transform: scale(0.95); }
+
+      #aig-fab-fmt {
+        position: fixed; right: 20px; top: 134px; z-index: 99998;
+        width: 56px; height: 56px; border-radius: 50%;
+        background: linear-gradient(135deg, #ef8700, #15aabf);
+        color: #fff; font-size: 13px; font-weight: 800; letter-spacing: .5px;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 6px 16px rgba(239,135,0,0.4);
+        cursor: pointer; border: none; user-select: none;
+        transition: transform 0.15s ease;
+      }
+      #aig-fab-fmt:hover { transform: scale(1.05); }
+      #aig-fab-fmt:active { transform: scale(0.95); }
 
       #aig-modal-backdrop {
         position: fixed; inset: 0; z-index: 99999;
@@ -164,6 +180,13 @@
     btn.textContent = 'AI';
     btn.addEventListener('click', openModal);
     document.body.appendChild(btn);
+
+    const fmtBtn = document.createElement('button');
+    fmtBtn.id = 'aig-fab-fmt';
+    fmtBtn.title = '一鍵套用標準格式';
+    fmtBtn.textContent = '套格式';
+    fmtBtn.addEventListener('click', applyFormat);
+    document.body.appendChild(fmtBtn);
   }
 
   // ─── Modal ───────────────────────────────────────────────────────────────
@@ -372,6 +395,112 @@
       || trimmed === '<br>';
     if (isEmpty) return incoming;
     return existing + incoming;
+  }
+
+  // ─── 套格式：讀取編輯器現有內容 → 正規化 → 寫回 ───────────────────────────
+  function applyFormat() {
+    const inst = getFroalaInstance();
+    const editorEl = document.querySelector('.fr-element.fr-view');
+
+    let current;
+    if (inst?.html?.get) current = inst.html.get();
+    else if (editorEl) current = editorEl.innerHTML;
+    else { toast('找不到 Froala 編輯器', 'error'); return; }
+
+    if (!current || !current.trim()) { toast('編輯器是空的，沒東西可套', 'info'); return; }
+
+    let next;
+    try {
+      next = transformHTML(current);
+    } catch (e) {
+      console.error('[AIG] format transform error:', e);
+      toast('轉換失敗：' + e.message, 'error');
+      return;
+    }
+
+    const ok = writeFroalaHTML(inst, editorEl, next);
+    if (ok) toast('✓ 已套用標準格式', 'success');
+    else toast('寫回編輯器失敗', 'error');
+  }
+
+  // 強制覆蓋成標準格式（h2 橘 / h3 藍綠 / p、li 18px / 表格 span 18px；圖片不動）
+  function transformHTML(html) {
+    const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+    const root = doc.body;
+
+    root.querySelectorAll('h2').forEach((el) => el.style.setProperty('color', FMT.h2Color));
+    root.querySelectorAll('h3').forEach((el) => el.style.setProperty('color', FMT.h3Color));
+
+    root.querySelectorAll('p').forEach((p) => {
+      if (p.closest('li, td, th')) return;
+      p.style.setProperty('font-size', FMT.font);
+    });
+
+    root.querySelectorAll('li').forEach((li) => {
+      const inner = unwrapInner(li.innerHTML);
+      li.innerHTML = `<p><span style="font-size: ${FMT.font};">${inner || '<br>'}</span></p>`;
+    });
+
+    root.querySelectorAll('th').forEach((th) => {
+      const inner = unwrapInner(th.innerHTML);
+      th.innerHTML = `<span style="font-size: ${FMT.font};"><strong>${inner || '<br>'}</strong><br></span>`;
+    });
+
+    root.querySelectorAll('td').forEach((td) => {
+      if (!td.getAttribute('colspan')) td.setAttribute('colspan', '1');
+      if (!td.getAttribute('rowspan')) td.setAttribute('rowspan', '1');
+      const inner = unwrapInner(td.innerHTML);
+      td.innerHTML = `<p><span style="font-size: ${FMT.font};">${inner || '<br>'}</span></p>`;
+    });
+
+    return root.innerHTML;
+  }
+
+  // 去掉外層排版包裝（p / span / strong）與結尾 <br>，保留 <a> <em> <s> <u> <code> 等語意標籤
+  function unwrapInner(htmlStr) {
+    return String(htmlStr)
+      .replace(/<\/?(?:p|span|strong)\b[^>]*>/gi, '')
+      .replace(/(?:<br\s*\/?>\s*)+$/i, '')
+      .trim();
+  }
+
+  function getFroalaInstance() {
+    try {
+      const FE = window.FroalaEditor || window.unsafeWindow?.FroalaEditor;
+      if (FE && Array.isArray(FE.INSTANCES) && FE.INSTANCES.length) {
+        return FE.INSTANCES.find((i) => i.$box?.[0]?.isConnected) || FE.INSTANCES[0];
+      }
+    } catch (e) { /* noop */ }
+    try {
+      const $ = window.jQuery || window.$;
+      if ($) {
+        const inst = $('.fr-box').first().data('froala.editor');
+        if (inst) return inst;
+      }
+    } catch (e) { /* noop */ }
+    return null;
+  }
+
+  // 直接「取代」編輯器內容（與匯入的 append 不同）
+  function writeFroalaHTML(inst, editorEl, html) {
+    if (inst?.html?.set) {
+      inst.html.set(html);
+      inst.events?.trigger?.('contentChanged');
+      inst.undo?.saveStep?.();
+      return true;
+    }
+    if (!editorEl) return false;
+    editorEl.innerHTML = html;
+    editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+    editorEl.dispatchEvent(new Event('blur', { bubbles: true }));
+    const textarea = document.querySelector('#timeline_desc, textarea.pp-froala-editor');
+    if (textarea) {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+      setter.call(textarea, html);
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    return true;
   }
 
   // ─── Util ─────────────────────────────────────────────────────────────────

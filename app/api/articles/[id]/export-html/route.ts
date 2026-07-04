@@ -101,6 +101,7 @@ type BNBlock = {
     href?: string
     text?: string
     uuid?: string
+    courses?: string
   }
   content?: BNInline[]
   children?: BNBlock[]
@@ -191,6 +192,8 @@ function blockToHTML(block: BNBlock): string {
       const uuid = block.props?.uuid ?? ""
       return `<p data-pp-ai-uuid="${uuid}" style="text-align: center;"><a class="btn btn-primary" href="${href}" style="color: #FFF!important;text-align: right ; font-size:18px;padding:10px 20px; border-radius:7px;">${text}</a></p>`
     }
+    case "ppCourseCarousel":
+      return courseCarouselToHTML(block)
     case "table":
       return tableToHTML(block)
     case "image": {
@@ -214,6 +217,44 @@ function blockToHTML(block: BNBlock): string {
     default:
       return `<p style="${STYLE.p}">${inner || "<br>"}</p>`
   }
+}
+
+// 課程輪播（course-carousel-card 版本 A）：把 props.courses 還原成橫向捲動卡片 HTML
+type CarouselCourse = { href?: string; img?: string; title?: string; desc?: string }
+
+function courseCarouselToHTML(block: BNBlock): string {
+  let courses: CarouselCourse[] = []
+  try {
+    const parsed = JSON.parse(block.props?.courses ?? "[]")
+    if (Array.isArray(parsed)) courses = parsed
+  } catch {
+    return ""
+  }
+  if (!courses.length) return ""
+
+  const card = (c: CarouselCourse): string => {
+    const u = escapeAttr(c.href ?? "")
+    const img = escapeAttr(c.img ?? "")
+    const title = escapeText(c.title ?? "")
+    const desc = escapeText(c.desc ?? "")
+    return (
+      `<div style="flex:0 0 280px; display:flex; flex-direction:column; scroll-snap-align:start; border:1px solid #eeeeee; border-radius:14px; overflow:hidden; background-color:#ffffff; background-image:linear-gradient(#ffffff,#ffffff); box-shadow:0 2px 10px rgba(0,0,0,0.08);">` +
+      `<a href="${u}" target="_blank" rel="" style="display:block; text-decoration:none;">` +
+      `<img src="${img}" alt="${escapeAttr(c.title ?? "")}" style="display:block; width:100%; height:150px; object-fit:cover;"></a>` +
+      `<div style="padding:16px; display:flex; flex-direction:column; flex:1;">` +
+      `<p style="margin:0 0 8px; min-height:45px; font-size:16px; font-weight:bold; line-height:1.4;">` +
+      `<a href="${u}" target="_blank" rel="" style="text-decoration:none; color:#222222 !important;">${title}</a></p>` +
+      `<p style="margin:0 0 14px; flex:1; font-size:14px; line-height:1.6; color:#666666 !important;">${desc}</p>` +
+      `<a href="${u}" target="_blank" rel="" style="margin-top:auto; align-self:flex-start; display:inline-block; background:#FF6B00 !important; color:#FFFFFF !important; font-size:14px; font-weight:bold; padding:9px 22px; border-radius:6px; text-decoration:none;">了解更多 →</a>` +
+      `</div></div>`
+    )
+  }
+
+  return (
+    `<div style="display:flex; gap:16px; overflow-x:auto; padding:4px 4px 18px; margin:0 0 28px; scroll-snap-type:x mandatory;">` +
+    courses.map(card).join("") +
+    `</div>`
+  )
 }
 
 type BNTableCell = {

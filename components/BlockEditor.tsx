@@ -68,8 +68,82 @@ const PPButtonBlock = createReactBlockSpec(
   }
 )()
 
+// ─── 課程輪播 block（course-carousel-card 版本 A，原樣輸出至發布 HTML）─────────
+// courses 以 JSON 字串存在 prop：[{href,img,title,desc}]
+type CarouselCourse = { href: string; img: string; title: string; desc: string }
+
+function parseCourses(raw: string): CarouselCourse[] {
+  try {
+    const arr = JSON.parse(raw || "[]")
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
+}
+
+const PPCourseCarouselBlock = createReactBlockSpec(
+  {
+    type: "ppCourseCarousel",
+    propSchema: {
+      courses: { default: "[]" },
+    },
+    content: "none",
+  },
+  {
+    render: ({ block }) => {
+      const courses = parseCourses((block.props as { courses: string }).courses)
+      return (
+        <div
+          contentEditable={false}
+          style={{ display: "flex", gap: "16px", overflowX: "auto", padding: "4px 4px 18px", margin: "0 0 28px" }}
+        >
+          {courses.map((c, i) => (
+            <div
+              key={i}
+              style={{ flex: "0 0 280px", display: "flex", flexDirection: "column", border: "1px solid #eeeeee", borderRadius: "14px", overflow: "hidden", background: "#ffffff", boxShadow: "0 2px 10px rgba(0,0,0,0.08)" }}
+            >
+              <a href={c.href || undefined} onClick={(e) => e.preventDefault()} style={{ display: "block", textDecoration: "none" }}>
+                <img src={c.img} alt={c.title} style={{ display: "block", width: "100%", height: "150px", objectFit: "cover" }} />
+              </a>
+              <div style={{ padding: "16px", display: "flex", flexDirection: "column", flex: 1 }}>
+                <p style={{ margin: "0 0 8px", minHeight: "45px", fontSize: "16px", fontWeight: "bold", lineHeight: 1.4 }}>
+                  <a href={c.href || undefined} onClick={(e) => e.preventDefault()} style={{ textDecoration: "none", color: "#222222" }}>{c.title}</a>
+                </p>
+                <p style={{ margin: "0 0 14px", flex: 1, fontSize: "14px", lineHeight: 1.6, color: "#666666" }}>{c.desc}</p>
+                <a href={c.href || undefined} onClick={(e) => e.preventDefault()} style={{ marginTop: "auto", alignSelf: "flex-start", display: "inline-block", background: "#FF6B00", color: "#FFFFFF", fontSize: "14px", fontWeight: "bold", padding: "9px 22px", borderRadius: "6px", textDecoration: "none" }}>了解更多 →</a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    // 把貼進來的輪播 HTML（含 scroll-snap-type 的 flex 容器）收斂成單一 block，
+    // 避免 BlockNote 把它拆成一堆段落與圖片。
+    parse: (element) => {
+      const style = element.getAttribute("style") || ""
+      if (element.tagName !== "DIV" || !/scroll-snap-type/i.test(style)) return undefined
+      const cards = Array.from(element.children).filter((el) => el.tagName === "DIV")
+      const courses: CarouselCourse[] = []
+      for (const card of cards) {
+        const img = card.querySelector("img")
+        const titleAnchor = card.querySelector("p a")
+        const anchor = titleAnchor || card.querySelector("a[href]")
+        const href = anchor?.getAttribute("href") || ""
+        const title = (titleAnchor?.textContent || img?.getAttribute("alt") || "").trim()
+        let desc = ""
+        card.querySelectorAll("p").forEach((p) => {
+          if (!p.querySelector("a")) desc = (p.textContent || "").trim() || desc
+        })
+        if (href) courses.push({ href, img: img?.getAttribute("src") || "", title, desc })
+      }
+      if (!courses.length) return undefined
+      return { courses: JSON.stringify(courses) }
+    },
+  }
+)()
+
 const editorSchema = BlockNoteSchema.create({
-  blockSpecs: { ...defaultBlockSpecs, ppButton: PPButtonBlock },
+  blockSpecs: { ...defaultBlockSpecs, ppButton: PPButtonBlock, ppCourseCarousel: PPCourseCarouselBlock },
   styleSpecs: { ...defaultStyleSpecs, fontSize: FontSizeStyle },
 })
 

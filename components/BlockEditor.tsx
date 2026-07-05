@@ -86,12 +86,21 @@ const PPCourseCarouselBlock = createReactBlockSpec(
     type: "ppCourseCarousel",
     propSchema: {
       courses: { default: "[]" },
+      html: { default: "" },
+      title: { default: "推薦課程" },
     },
     content: "none",
   },
   {
     render: ({ block }) => {
-      const courses = parseCourses((block.props as { courses: string }).courses)
+      const props = block.props as { courses: string; html: string; title: string }
+      // 新版（radio 輪播）：整段 fragment（含 <style>）預先渲染好存在 html prop，
+      // 編輯器與發布端都原樣輸出，避免走 tryParseHTMLToBlocks 被拆解／吃掉 <style>。
+      if (props.html) {
+        return <div contentEditable={false} dangerouslySetInnerHTML={{ __html: props.html }} />
+      }
+      // 舊版 fallback：course-carousel-card 版簡易橫向卡片
+      const courses = parseCourses(props.courses)
       return (
         <div
           contentEditable={false}

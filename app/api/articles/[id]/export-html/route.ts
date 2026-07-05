@@ -102,6 +102,8 @@ type BNBlock = {
     text?: string
     uuid?: string
     courses?: string
+    html?: string
+    title?: string
   }
   content?: BNInline[]
   children?: BNBlock[]
@@ -223,6 +225,10 @@ function blockToHTML(block: BNBlock): string {
 type CarouselCourse = { href?: string; img?: string; title?: string; desc?: string }
 
 function courseCarouselToHTML(block: BNBlock): string {
+  // 新版（radio 輪播）：整段 fragment（含 <style>）已預先渲染好存在 html prop，原樣輸出
+  const rawHtml = block.props?.html
+  if (typeof rawHtml === "string" && rawHtml.trim()) return rawHtml
+
   let courses: CarouselCourse[] = []
   try {
     const parsed = JSON.parse(block.props?.courses ?? "[]")
